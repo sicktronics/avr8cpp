@@ -1,0 +1,376 @@
+// set up global variables
+
+    // 1. a constant to represent the size of the register space (registerSpace) 
+    // (data memory minus internal SRAM, so 32 gen purp registers, 
+    // 64 i/o registers, 160 extended i/o registers) -> size = 0x100 = 256
+
+    // 2. a constant for the maximum number of interrupts allowed - 128
+    // is sufficient - used for initializing an array later on
+
+// set up the "memory hooks" system
+
+    // create a type called "CPUMemoryHook" which is a blueprint for functions
+    // it takes in four parameters: value (8-bit int), oldValue (8-bit int),
+    // address (16-bit int), and mask (8-bit int)
+    // returns either a boolean or void
+
+    // create an interface (class w/o object creation) called "CPUMemoryHooks"
+    // basically a dictionary where we are using numerical "keys" to access different 
+    // objects of type CPUMemoryHook
+
+    // another type called "CPUMemoryReadHook"
+    // takes in an address (16-bit int) and returns and 8-bit number
+
+    // create an interface called "CPUMemoryReadHooks"
+    // basically a dictionary where we are using numerical "keys" to access different 
+    // objects of type CPUMemoryReadHook
+
+// Set up an interface to configure AVR interrupts - fields are:
+
+    // address: u8;
+    // enableRegister: u16;
+    // enableMask: u8;
+    // flagRegister: u16;
+    // flagMask: u8;
+    // constant?: boolean;
+    // inverseFlag?: boolean;
+
+// Configure some clock stuff
+
+    // creating a type called AVRClockEventCallback
+    // takes in nothing, returns void
+
+    // creating an interface for AVRClockEventEntry - fields are:
+        // cycles: number;
+        // callback: AVRClockEventCallback;
+        // next: AVRClockEventEntry | null;
+
+// now, the big kahuna - the CPU class
+    
+    // set up class public properties
+
+        // creating a const array called "data", of size sramBytes + registerSpace, each slot holds an 8-bit 
+        // unsiged integer
+
+        // creating a const array called "data16" of 16-bit unsigned integers BUT
+        // we are passing this.data.buffer, which will allow us to view the same data as "data"
+        // but interpreted as 16 bit values instead of 8!!
+
+        // creating a DataView object, and pass it in the "data" buffer - The DataView view provides a low-level 
+        // interface for reading and writing multiple number types in a binary ArrayBuffer, without having to care 
+        // about the platform's endianness.
+
+        // a const array "progBytes", containing the progMem buffer, BUT, each slot holds an 8-bit unsiged integer 
+        // (so looking at progmem a byte at a time)  
+
+        // creating an array of CPUMemoryReadHooks called readHooks
+
+        // creating an array of CPUMemoryWriteHooks called writeHooks
+
+    // set up class private properties
+
+        // array to store queued interrupt called pendingInterrupts, each slot is of type AVRInterruptConfig or null, 
+        // and of size MAX_INTERRUPTS
+    
+        // variable to track the next clock event, called nextClockEvent, is initialized to null, 
+        // of type AVRClockEventEntry or null
+
+        // an empty array of type AVRClockEventEntry called clockEventPool, helps avoid garbage collection
+
+    // some more properties...
+
+        // a bool called pc22Bits (if this.progBytes.length > 0x20000;) to track whether the program counter can 
+        // address 22 bits
+
+        // creating a collection ("Set") of type AVRIOPort called gpioPorts
+
+        // Creating an empty array of type AVRIOPort called gpioByPort
+
+        // function onWatchdogReset which is empty by default
+
+        // setting up a 32-bit unsigned int called pc (Program Counter), initialized to 0
+
+        // variable to track clock cycles, initialized to 0
+
+        // 16-bit signed interrupt to track nextInterrupt (initialized to -1)
+
+        // 16-bit signed interrupt to track maxInterrupt (initialized to 0)
+
+    // ~the constructor~
+
+        // takes in an array of 16-bit unsigned integers, progMem, and an int sramBytes (=8K or 8192)
+    
+        // only calls the reset function
+
+    // reset function  
+
+        // points stack pointer to last data memory location data.len() - 1
+
+        // resets program counter -> pc = 0
+
+        // empty pending interrupts -> fills pendingInterrupts with nulls
+
+        // reset next interrupt -> nextInterrupt = -1
+
+        // reset nextclockevent -> nextClockEvent = null
+
+    // function for reading data
+
+        // takes in the address
+
+        // IF the address is >= 32 (aka, past the 32 gen purp registers I think) and readHooks at address exists,
+        // THEN return the data at that location
+
+    // function for writing data
+
+        // takes in an address, a value, and a mask (set to 0xFF or 255) (unclear what the purpose of mask is RN)
+
+        // IF the writeHooks at that address exists
+            // IF the value at that address already exists (I think)
+            // THEN return
+        // ELSE
+            // stuff the value in the data at that address
+
+    // getter for SP 
+        // takes in value
+        // returns the dataView at slot 93 IN LITTLE-ENDIAN format (93 or 0x5D is lower byte of SP)
+
+    // setter for SP 
+        // takes in value
+        // sets the dataView at slot 93 IN LITTLE-ENDIAN format (93 or 0x5D is lower byte of SP)
+
+    // getter for SREG
+        // returns data[95] (aka 0x5F, which matches the datasheet)
+
+    // getter for whether interrupts are enabled
+        // returns whether SREG is 0x80 -> if it is, interrupts are enabled!
+
+    // Interrupts !!!
+
+    // construct carefully
+    // function for setting interrupt flags!!
+
+        // takes in a parameter called interrupt, of type AVRInterruptConfig
+
+        // extracts the flagRegister, flagMask, enableRegister, enableMask from interrupt and saves them as consts
+
+        // IF inverseFlag == true
+            // set data[flagRegister] &= (bitwise logical AND) ~flagMask (bit inversion of flagMask)
+        // ELSE
+            // set data[flagRegister] |= (bitwise logical OR) flagMask
+
+        // IF data[enableRegister] AND enableMask both exist
+            // THEN queue the interrupt (call queueInterrupt and pass it interrupt)
+
+    // construct carefully
+    // function for updating whether interrupts are enabled
+
+        // takes in a parameter called interrupt, of type AVRInterruptConfig and an unsigned 8-bit int registerValue
+
+        // extracts the enableMask, flagRegister, flagMask, inverseFlag from interrupt and saves them as consts
+
+        // IF registerValue & enableMask --> are 1?
+
+            // then & the data[flagRegister] with flagMask, store in a const bitSet
+
+            // IF inverseFlag is true - !bitSet, otherwise bitSet
+
+                // queue the interrupt
+      
+        // ELSE 
+            // clear the interrupt with clearFlag flagRegister
+
+    // construct carefully
+    // function for queuing interrupts
+
+        // takes in a parameter called interrupt, of type AVRInterruptConfig
+
+        // store address of interrupt as a const
+
+        // store interrupt at pendingInterrupts[address]
+    
+        // IF nextInterrupt = -1 or nextInterrupt > address
+
+            // then nextInterrupt = address (it makes sense to queue it up next)
+
+        // IF address is greater than maxInterrupt
+
+            // then max interrupt is assigned address
+
+    // construct carefully
+    // function for clearing interrupts
+
+        // takes in the address, flagRegister, and flagMask of an interrupt, and clearFlag = true by default
+
+        // IF clearFlag is true
+
+            // then data[flagRegister] gets &= with ~flagMask and stored back in it
+
+        // store pendingInterrupts and maxInterrupt as consts
+        
+        // IF !pendingInterrupts[address]
+
+            // then return
+
+        // Set pendingInterrupts[address] = null 
+        
+        // IF nextInterrupt is address
+
+            // then nextInterrupt set to -1
+
+            // search through all pendingInterrupts --> for (let i = address + 1; i <= maxInterrupt; i++)
+
+                // if there's a pendingInterrupts[i]
+
+                // Then nextInterrupt = i
+
+                // break
+
+    // construct carefully
+    // function for clearing interrupts by flag
+
+        // takes in an interrupt of type AVRInterruptConfig and a registerValue
+        
+        // store flagRegister and flagMask as consts
+
+        // IF registervalue & flagMask - note: The flagMask defines which bits are relevant for the check. If flagMask 
+        // has certain bits set to 1, the condition will only be true if those same bits in registerValue are also 1.If 
+        // the result of registerValue & flagMask is non-zero (i.e., at least one of the bits defined by flagMask is 
+        // set in registerValue), the condition evaluates to true. If it's zero, it evaluates to false.
+
+            // then data[flagRegister] gets &= with ~flagMask and stored back in
+
+            // clear the interrupt, no pass in for clearFlag
+
+
+    // Clock stuff !!!
+
+    // construct carefully
+    // function for adding a clock event
+
+        // takes in an AVRClockEventCallback called callback and cycles (number)
+
+        // store clockEventPool (array of AVRClockEventEntry-s) as a const
+
+        // cycles = itself + max(1, cycles)
+
+        // ~~ basically, if there's a queued clock event, make it the next entry, otherwise use the one we passed in ~~
+    
+        // pop off the latest clockEventPool and assign it to a const maybeEntry
+
+        // const entry - of type AVRClockEventEntry which *might* be assigned maybeEntry, or if it's null, assign it
+        // { cycles, callback, next: null }
+
+        // set cycles of entry = to cycles
+
+        // set callback of entry = to callback
+
+        // Extracting CPU's nextClockEvent as nextClockEvent
+
+        // let lastItem = null
+
+        // WHILE clockEvent AND (&&) clockEvent.cycles < cycles - loop through the clock events
+
+            // lastItem = clockEvent
+
+            // clockEvent gets the next clockEvent
+
+        // IF lastItem
+
+            // lastItem.next gets assigned entry
+
+            // entry.next is assigned clockEvent
+
+        // ELSE
+
+            // nextClockEvent gets assigned entry
+
+            // entry.next gets assigned clockEvent
+
+        // return the callback
+
+
+    // construct carefully
+    // function for updating a clock event
+
+        // takes in an AVRClockEventCallback called callback and cycles (number)
+
+        // IF clearClockEvent(callback) returns true
+
+            // then addClockEvent(callback, cycles)
+
+            // return true
+
+        // return false as default
+
+    
+    // construct carefully
+    // function for clearing a clock event
+
+        // takes in a callback called AVRClockEventCallback
+ 
+        // extracting CPU's nextClockEvent as nextClockEvent
+    
+        // IF NOT clockEvent
+
+            // return false
+
+        // let clockEventPool = CPU's clockEventPool
+
+        // let lastItem be null
+
+        // WHILE clockEvent returns true
+
+            // IF clockEvent's callback = our callback
+                // IF lastItem exists
+                    // lastItem.next = clockEvent.next
+                // ELSE
+                    this.nextClockEvent = clockEvent.next
+                // IF length of clockEventPool < 10
+                    // push clockEvent onto the clockEventPool
+                // return true
+
+            // lastItem is clockEvent
+
+            // clockEvent = clockEvent.next
+
+        // return false
+
+    // construct carefully
+    // function for ticking away...
+
+        // ~~ handling next clock event ~~
+ 
+        // get cpu's next clock event and store as a const nextClockEvent
+
+        // IF (nextClockEvent && nextClockEvent.cycles <= this.cycles)
+
+            // call the callback function on nextClockEvent (should return void)
+
+            // this.nextClockEvent = nextClockEvent.next
+
+            // IF length of clockEventPool < 10
+                // push nextClockEvent onto the clockEventPool
+
+        // ~~ handling next interrupt ~~
+
+        // Extracting CPU's nextInterrupt as nextInterrupt
+
+        // IF nextClockEvent's interrupts are enabled AND nextInterrupt >= 0
+
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion ~~huh~~
+
+            // declare a const, interrupt, and assign it this.pendingInterrupts[nextInterrupt] ! - exclamation point?
+
+            // call avrInterrupt and pass it the CPU and interrupt.address
+
+            // IF (!interrupt.constant)
+
+                // then clear the interrrupt
+
+
+
+    
+    
+
+     
