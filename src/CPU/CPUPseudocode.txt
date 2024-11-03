@@ -1,27 +1,27 @@
-// set up global variables
+// ✅ set up global variables
 
-    // 1. a constant to represent the size of the register space (registerSpace) 
+    // ✅ 1. a constant to represent the size of the register space (registerSpace) 
     // (data memory minus internal SRAM, so 32 gen purp registers, 
     // 64 i/o registers, 160 extended i/o registers) -> size = 0x100 = 256
 
-    // 2. a constant for the maximum number of interrupts allowed - 128
+    //  ✅2. a constant for the maximum number of interrupts allowed - 128
     // is sufficient - used for initializing an array later on
 
-// set up the "memory hooks" system
+// ✅ set up the "memory hooks" system
 
-    // create a type called "CPUMemoryHook" which is a blueprint for functions
+    // ✅create a type called "CPUMemoryHook" which is a blueprint for functions
     // it takes in four parameters: value (8-bit int), oldValue (8-bit int),
     // address (16-bit int), and mask (8-bit int)
     // returns either a boolean or void
 
-    // create an interface (class w/o object creation) called "CPUMemoryHooks"
+    // ✅create an interface (class w/o object creation) called "CPUMemoryHooks"
     // basically a dictionary where we are using numerical "keys" to access different 
     // objects of type CPUMemoryHook
 
-    // another type called "CPUMemoryReadHook"
+    // ✅another type called "CPUMemoryReadHook"
     // takes in an address (16-bit int) and returns and 8-bit number
 
-    // create an interface called "CPUMemoryReadHooks"
+    // ✅create an interface called "CPUMemoryReadHooks"
     // basically a dictionary where we are using numerical "keys" to access different 
     // objects of type CPUMemoryReadHook
 
@@ -49,23 +49,23 @@
     
     // set up class public properties
 
-        // creating a const array called "data", of size sramBytes + registerSpace, each slot holds an 8-bit 
+        // ✅creating a const array called "data", of size sramBytes + registerSpace, each slot holds an 8-bit 
         // unsiged integer
 
-        // creating a const array called "data16" of 16-bit unsigned integers BUT
+        // ✅creating a const array called "data16" of 16-bit unsigned integers BUT
         // we are passing this.data.buffer, which will allow us to view the same data as "data"
         // but interpreted as 16 bit values instead of 8!!
 
-        // creating a DataView object, and pass it in the "data" buffer - The DataView view provides a low-level 
+        // ✅creating a DataView object, and pass it in the "data" buffer - The DataView view provides a low-level 
         // interface for reading and writing multiple number types in a binary ArrayBuffer, without having to care 
         // about the platform's endianness.
 
         // a const array "progBytes", containing the progMem buffer, BUT, each slot holds an 8-bit unsiged integer 
         // (so looking at progmem a byte at a time)  
 
-        // creating an array of CPUMemoryReadHooks called readHooks
+        // ✅creating an array of CPUMemoryReadHooks called readHooks
 
-        // creating an array of CPUMemoryWriteHooks called writeHooks
+        // ✅creating an array of CPUMemoryWriteHooks called writeHooks
 
     // set up class private properties
 
@@ -114,17 +114,13 @@
 
         // reset nextclockevent -> nextClockEvent = null
 
-    // function for reading data
-
+    // function for reading data (.h: ✅ .cpp: ✅)
         // takes in the address
-
         // IF the address is >= 32 (aka, past the 32 gen purp registers I think) and readHooks at address exists,
         // THEN return the data at that location
 
-    // function for writing data
-
+    // function for writing data (.h: ✅ .cpp: ✅)
         // takes in an address, a value, and a mask (set to 0xFF or 255) (unclear what the purpose of mask is RN)
-
         // IF the writeHooks at that address exists
             // IF the value at that address already exists (I think)
             // THEN return
