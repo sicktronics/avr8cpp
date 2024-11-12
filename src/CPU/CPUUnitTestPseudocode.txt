@@ -5,14 +5,14 @@
 
 // Set up a type of array, ITestEvent, with two numbers: expected cycles vs actual cycles
 
-// TEST 1: confirm that SP gets set, always, to last byte of internal SRAM
+// ✅ TEST 1: confirm that SP gets set, always, to last byte of internal SRAM
 
     // ex. register space = 0x100, sram = 0x1000 
     // (pass SRAM to constructor like const cpu = new CPU(new Uint16Array(1024), 0x1000);)
 
     // then get the SP -> should be at 0x10FF
 
-// TEST 2: confirm that queued events execute after the given number of cycles has passed
+// ✅ TEST 2: confirm that queued events execute after the given number of cycles has passed
 
     // set up a test cpu const cpu = new CPU(new Uint16Array(1024), 0x1000);
     // set up an array of ITestEvents (const events: ITestEvent[] = [];)
@@ -29,14 +29,14 @@
 
     // event array should look like [1, 1],[4, 4],[10, 10]
     
-// TEST 3: confirm that CPU correctly sorts events when added in reverse order
+// ✅ TEST 3: confirm that CPU correctly sorts events when added in reverse order
 
     // set up a test cpu const cpu = new CPU(new Uint16Array(1024), 0x1000);
     // set up an array of ITestEvents (const events: ITestEvent[] = [];)
 
     // same test as before, but the for loop iterates in reverse order: for (const i of [1, 4, 10])
 
-// TEST 4: confirm that CPU updates the number of cycles for the given clock event
+// ✅ TEST 4: confirm that CPU updates the number of cycles for the given clock event
 
     // set up a test cpu const cpu = new CPU(new Uint16Array(1024), 0x1000);
     // set up an array of ITestEvents (const events: ITestEvent[] = [];)
@@ -60,7 +60,7 @@
 
     // check the events array, should = [4, 2], [10, 10], [1, 12],
 
-// TEST 5: confirm that CPU removes the given clock event
+// ✅ TEST 5: confirm that CPU removes the given clock event
 
     // set up a test cpu const cpu = new CPU(new Uint16Array(1024), 0x1000);
     // set up an array of ITestEvents (const events: ITestEvent[] = [];)
@@ -82,7 +82,7 @@
 
     //  check the events array, should = [1, 1], [10, 10]
 
-// TEST 6: confirm that CPU returns false if the provided clock event is not scheduled
+// ✅ TEST 6: confirm that CPU returns false if the provided clock event is not scheduled - NOTE: PASSES ASSUMING THAT CALLBACK FUNCTIONS ARE NOT IDENTICAL. CALLBACK FUNCTIONS ACT AS UNIQUE IDENTIFIER
     
     // set up a test cpu const cpu = new CPU(new Uint16Array(1024), 0x1000);
 

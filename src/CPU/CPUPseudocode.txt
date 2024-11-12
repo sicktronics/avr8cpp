@@ -25,7 +25,7 @@
     // basically a dictionary where we are using numerical "keys" to access different 
     // objects of type CPUMemoryReadHook
 
-// Set up an interface to configure AVR interrupts - fields are:
+// ✅ Set up an interface to configure AVR interrupts - fields are:
 
     // address: u8;
     // enableRegister: u16;
@@ -35,19 +35,18 @@
     // constant?: boolean;
     // inverseFlag?: boolean;
 
-// Configure some clock stuff
+// ✅ Configure some clock stuff
 
-    // creating a type called AVRClockEventCallback
-    // takes in nothing, returns void
+    // ✅ creating a type called AVRClockEventCallback - takes in nothing, returns void
 
-    // creating an interface for AVRClockEventEntry - fields are:
+    // ✅ creating an interface for AVRClockEventEntry - fields are:
         // cycles: number;
         // callback: AVRClockEventCallback;
         // next: AVRClockEventEntry | null;
 
 // now, the big kahuna - the CPU class
     
-    // set up class public properties
+    // ✅set up class public properties
 
         // ✅creating a const array called "data", of size sramBytes + registerSpace, each slot holds an 8-bit 
         // unsiged integer
@@ -60,59 +59,59 @@
         // interface for reading and writing multiple number types in a binary ArrayBuffer, without having to care 
         // about the platform's endianness.
 
-        // a const array "progBytes", containing the progMem buffer, BUT, each slot holds an 8-bit unsiged integer 
+        // ✅a const array "progBytes", containing the progMem buffer, BUT, each slot holds an 8-bit unsiged integer 
         // (so looking at progmem a byte at a time)  
 
         // ✅creating an array of CPUMemoryReadHooks called readHooks
 
         // ✅creating an array of CPUMemoryWriteHooks called writeHooks
 
-    // set up class private properties
+    // ✅set up class private properties
 
-        // array to store queued interrupt called pendingInterrupts, each slot is of type AVRInterruptConfig or null, 
+        // ✅ array to store queued interrupt called pendingInterrupts, each slot is of type AVRInterruptConfig or null, 
         // and of size MAX_INTERRUPTS
     
-        // variable to track the next clock event, called nextClockEvent, is initialized to null, 
+        // ✅variable to track the next clock event, called nextClockEvent, is initialized to null, 
         // of type AVRClockEventEntry or null
 
-        // an empty array of type AVRClockEventEntry called clockEventPool, helps avoid garbage collection
+        // ✅an empty array of type AVRClockEventEntry called clockEventPool, helps avoid garbage collection
 
-    // some more properties...
+    // ✅ some more properties...
 
-        // a bool called pc22Bits (if this.progBytes.length > 0x20000;) to track whether the program counter can 
+        // ✅ a bool called pc22Bits (if this.progBytes.length > 0x20000;) to track whether the program counter can 
         // address 22 bits
 
-        // creating a collection ("Set") of type AVRIOPort called gpioPorts
+        // ✅ creating a collection ("Set") of type AVRIOPort called gpioPorts
 
-        // Creating an empty array of type AVRIOPort called gpioByPort
+        // ✅ Creating an empty array of type AVRIOPort called gpioByPort
 
-        // function onWatchdogReset which is empty by default
+        // ✅ function onWatchdogReset which is empty by default
 
-        // setting up a 32-bit unsigned int called pc (Program Counter), initialized to 0
+        // ✅ setting up a 32-bit unsigned int called pc (Program Counter), initialized to 0
 
-        // variable to track clock cycles, initialized to 0
+        // ✅ variable to track clock cycles, initialized to 0
 
-        // 16-bit signed interrupt to track nextInterrupt (initialized to -1)
+        // ✅ 16-bit signed integer to track nextInterrupt (initialized to -1)
 
-        // 16-bit signed interrupt to track maxInterrupt (initialized to 0)
+        // ✅ 16-bit signed integer to track maxInterrupt (initialized to 0)
 
-    // ~the constructor~
+    // ~the constructor~ (.h: ✅ .cpp:✅ )
 
-        // takes in an array of 16-bit unsigned integers, progMem, and an int sramBytes (=8K or 8192)
+        // ✅takes in an array of 16-bit unsigned integers, progMem, and an int sramBytes (=8K or 8192)
     
-        // only calls the reset function
+        // ✅only calls the reset function
 
-    // reset function  
+    // ✅reset function (.h: ✅ .cpp: ✅)
 
-        // points stack pointer to last data memory location data.len() - 1
+        ✅ // points stack pointer to last data memory location data.len() - 1
 
-        // resets program counter -> pc = 0
+        // ✅resets program counter -> pc = 0
 
-        // empty pending interrupts -> fills pendingInterrupts with nulls
+        // ✅empty pending interrupts -> fills pendingInterrupts with nulls
 
-        // reset next interrupt -> nextInterrupt = -1
+        // ✅reset next interrupt -> nextInterrupt = -1
 
-        // reset nextclockevent -> nextClockEvent = null
+        //✅ reset nextclockevent -> nextClockEvent = null
 
     // function for reading data (.h: ✅ .cpp: ✅)
         // takes in the address
@@ -127,24 +126,28 @@
         // ELSE
             // stuff the value in the data at that address
 
-    // getter for SP 
+    // ✅ getter for SP 
         // takes in value
         // returns the dataView at slot 93 IN LITTLE-ENDIAN format (93 or 0x5D is lower byte of SP)
 
-    // setter for SP 
+    // ✅ setter for SP 
         // takes in value
         // sets the dataView at slot 93 IN LITTLE-ENDIAN format (93 or 0x5D is lower byte of SP)
 
-    // getter for SREG
+    // getter for SREG (.h: ✅ .cpp: ✅)
         // returns data[95] (aka 0x5F, which matches the datasheet)
 
-    // getter for whether interrupts are enabled
+    // getter for whether interrupts are enabled (.h: ✅ .cpp: ✅)
         // returns whether SREG is 0x80 -> if it is, interrupts are enabled!
+
+    /*
+    NOTE: Interrupt functions haven't been checked against ts scripts. However, they should work.
+    If time, test later. (Easier when we have an actual use case like a GPIO register or something)
+    */
 
     // Interrupts !!!
 
-    // construct carefully
-    // function for setting interrupt flags!!
+    // function for setting interrupt flags!! (.h: ✅ .cpp: ✅)
 
         // takes in a parameter called interrupt, of type AVRInterruptConfig
 
@@ -158,8 +161,7 @@
         // IF data[enableRegister] AND enableMask both exist
             // THEN queue the interrupt (call queueInterrupt and pass it interrupt)
 
-    // construct carefully
-    // function for updating whether interrupts are enabled
+    // function for updating whether interrupts are enabled (.h: ✅ .cpp: ✅)
 
         // takes in a parameter called interrupt, of type AVRInterruptConfig and an unsigned 8-bit int registerValue
 
@@ -176,8 +178,7 @@
         // ELSE 
             // clear the interrupt with clearFlag flagRegister
 
-    // construct carefully
-    // function for queuing interrupts
+    // function for queuing interrupts (.h: ✅ .cpp: ✅)
 
         // takes in a parameter called interrupt, of type AVRInterruptConfig
 
@@ -193,8 +194,7 @@
 
             // then max interrupt is assigned address
 
-    // construct carefully
-    // function for clearing interrupts
+    // function for clearing interrupts (.h: ✅ .cpp: ✅)
 
         // takes in the address, flagRegister, and flagMask of an interrupt, and clearFlag = true by default
 
@@ -222,8 +222,7 @@
 
                 // break
 
-    // construct carefully
-    // function for clearing interrupts by flag
+    // function for clearing interrupts by flag (.h: ✅ .cpp: ✅)
 
         // takes in an interrupt of type AVRInterruptConfig and a registerValue
         
@@ -242,7 +241,7 @@
     // Clock stuff !!!
 
     // construct carefully
-    // function for adding a clock event
+    // function for adding a clock event (.h: ✅ .cpp: ✅)
 
         // takes in an AVRClockEventCallback called callback and cycles (number)
 
@@ -287,7 +286,7 @@
 
 
     // construct carefully
-    // function for updating a clock event
+    // function for updating a clock event (.h: ✅ .cpp: ✅)
 
         // takes in an AVRClockEventCallback called callback and cycles (number)
 
@@ -301,7 +300,7 @@
 
     
     // construct carefully
-    // function for clearing a clock event
+    // function for clearing a clock event (.h: ✅ .cpp: ✅)
 
         // takes in a callback called AVRClockEventCallback
  
@@ -333,7 +332,7 @@
         // return false
 
     // construct carefully
-    // function for ticking away...
+    // function for ticking away (.h:✅  .cpp for interrupt stuff:  .cpp for clock stuff: ✅ )...
 
         // ~~ handling next clock event ~~
  

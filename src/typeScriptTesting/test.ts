@@ -70,19 +70,36 @@ readonly writeHooks: CPUMemoryHooks = []; //step 1
 // If no writeHooks is defined, should print the "manual write" message
 console.log("commence...");
 const cpu = new CPU;
+const inverseFlag = true;
+const bitSet = 0b00100000;
+
+// only evaluates to true if bitSet is false (bitSet = 00000000)
+if(!bitSet){
+    console.log("!bitSet is true");
+    console.log(~bitSet);
+}
+if(bitSet){
+    console.log("bitSet is true")
+}
+
+// if (inverseFlag ? !bitSet : bitSet) {
+//     // Do stuff
+// }
+
 // Should push use writeHooks to write
-cpu.writeHooks[32] = (value: u8, oldValue, addr, mask) => {
-    cpu.data[addr] = value;
-    return true;
-  };
+// cpu.writeHooks[32] = (value: u8, oldValue, addr, mask) => {
+//     cpu.data[addr] = value;
+//     return true;
+//   };
 
-cpu.readHooks[32] = (addr) => {
-    return cpu.data[addr];
-  };
+// cpu.readHooks[32] = (addr) => {
+//     return cpu.data[addr];
+//   };
 
-// call write data
-cpu.writeData(32, 89);
-cpu.readData(32);
+// // call write data
+// cpu.writeData(32, 89);
+// cpu.readData(32);
 
-console.log("data at address 32: ", cpu.data[32]);
+// console.log("data at address 32: ", cpu.data[32]);
+
 
