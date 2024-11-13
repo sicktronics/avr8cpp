@@ -1,0 +1,100 @@
+/* ~~~ Interrupt unit test pseudocode to be implemented in mainInterruptTesting.cpp ~~~ */ 
+
+/* 
+
+// Import CPU and interrupt modules
+import { CPU } from './cpu';
+import { avrInterrupt } from './interrupt';
+ 
+describe('avrInterrupt', () => {
+
+  // ✅ TEST 1: Confirm it works with 16-bit addressing
+    it('should execute interrupt handler', () => {
+    // Create a new CPU
+    const cpu = new CPU(new Uint16Array(0x8000));
+    // Point the PC to some rAnDoM location
+    cpu.pc = 0x520;
+
+    // Set SP to a random place on the stack
+    cpu.data[94] = 0;
+    cpu.data[93] = 0x80; // SP <- 0x80
+
+    // Enable global interrupts and also the carry flag (why? just for testing - see below)
+    cpu.data[95] = 0b10000001; // SREG <- I------C
+    
+    // trigger an interrupt with the current cpu and address of 5
+    avrInterrupt(cpu, 5);
+
+    // Once it returns, check number of cycles (should be 2)
+    expect(cpu.cycles).toEqual(2);
+
+    // PC should be the address we passed in
+    expect(cpu.pc).toEqual(5);
+
+    // SP should point to its old location -2  
+    expect(cpu.data[93]).toEqual(0x7e); // SP
+
+    // old PC address should be properly stored on the stack
+    expect(cpu.data[0x80]).toEqual(0x20); // Return addr low
+    expect(cpu.data[0x7f]).toEqual(0x5); // Return addr high
+
+    // Global interupts should be disabled
+    expect(cpu.data[95]).toEqual(0b00000001); // SREG: -------C
+
+    // NOTE: this doesn't restore PC/SP - assumes that this is handled in the ISR (or not at all - see note below)
+
+    });
+
+  // ✅ TEST 2: Confirm it works with 22-bit addressing
+    it('should push a 3-byte return address when running in 22-bit PC mode (issue #58)', () => {
+
+    // Create a cpu with a big honkin' progMem
+    const cpu = new CPU(new Uint16Array(0x80000));
+
+    // double check that 22-bit addressing is triggered
+    expect(cpu.pc22Bits).toEqual(true);
+
+    // Point pc to random location
+    cpu.pc = 0x10520;
+
+    // Set up SP at random location
+    cpu.data[94] = 0;
+    cpu.data[93] = 0x80; // SP <- 0x80
+
+    // Set SREG to enable interrupts and carry (for testing)
+    cpu.data[95] = 0b10000001; // SREG <- I------C
+
+    // trigger an interrupt with the current cpu and address of 5
+    avrInterrupt(cpu, 5);
+
+    // Once it returns, check number of cycles (should be 2)
+    expect(cpu.cycles).toEqual(2);
+
+    // PC should be the address we passed in
+    expect(cpu.pc).toEqual(5);
+
+    // SP should decrement by 3
+    expect(cpu.data[93]).toEqual(0x7d); 
+
+    // old PC address should be properly stored on the stack (22-bits wide)
+    expect(cpu.data[0x80]).toEqual(0x20); // Return addr low
+    expect(cpu.data[0x7f]).toEqual(0x05); // Return addr high
+    expect(cpu.data[0x7e]).toEqual(0x1); // Return addr extended
+
+    // Confirm global interrupts CLEARED
+    expect(cpu.data[95]).toEqual(0b00000001); // SREG: -------C
+    });
+});
+*/
+// ✅ TEST 3: Test the tick() function with interrupt handling - no restore
+
+    // Set up an interrupt, set constant = false, give it an address, add it to the queue
+
+    // Call tick()
+
+    // Confirm SP pointing to new top (-2)
+
+    // confirm PC pointing to interrupt address
+
+// CIRCLE BACK WHEN WORKING ON DEMO CODE: TEST 4: Test the tick() function with interrupt handling - fake restore 
+    // Same as test 3, but inside const=false conditional, restore the previous board state (pre-interrupt)

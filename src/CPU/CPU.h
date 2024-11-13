@@ -1,5 +1,7 @@
 #include <vector>
 
+#pragma once 
+
 // Global consts and variables
 
 // Shorthands for different types
@@ -141,7 +143,7 @@ class CPU {
   /*
   Whether the program counter (PC) can address 22 bits (the default is 16)
   */
-  bool pc22Bits = this->programBytes.size() > 0x20000; 
+  bool pc22Bits = false; 
 
   /*
   GPIO initialization - circle back

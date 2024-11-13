@@ -1,5 +1,8 @@
 #include "CPU.h"
+#include "interrupt.h"
 #include <iostream>
+
+
 
 CPU::CPU(std::vector<u16> progMem, int SRAMSize){
 
@@ -22,6 +25,9 @@ CPU::CPU(std::vector<u16> progMem, int SRAMSize){
         programBytes[2 * i + 1] = (progMem[i] >> 8) & 0xFF; // Upper 8 bits
         // std::cout << "progBytes at " << 2*i+1 << ": " << int(programBytes[2 * i + 1]) << std::endl;
    }
+
+    // Updating 22 bit addressing based on size of programBytes
+    this->pc22Bits = this->programBytes.size() > 0x20000 ? true : false;
 
     this->reset();
 }
@@ -424,19 +430,24 @@ void CPU::tick() {
         }            
     }
 
-    // ~~ TO DO: handling next interrupt ~~
+    // ~~ Handling next interrupt ~~
 
     // Extracting CPU's nextInterrupt as nextInterrupt
+    // Skip for now
 
-    // IF nextClockEvent's interrupts are enabled AND nextInterrupt >= 0
+    // IF CPU's interrupts are enabled AND nextInterrupt >= 0
+    if (this->getInterruptsEnabled() && this->nextInterrupt >= 0) {
 
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion ~~huh~~
-
-        // declare a const, interrupt, and assign it this.pendingInterrupts[nextInterrupt] ! - exclamation point?
+        // declare a const, interrupt, and assign it this.pendingInterrupts[nextInterrupt]
+        AVRInterruptConfig *interrupt = pendingInterrupts[nextInterrupt];
 
         // call avrInterrupt and pass it the CPU and interrupt.address
+        avrInterrupt(this, interrupt->address);
 
-        // IF (!interrupt.constant)
-
+        // IF interrupt is not constant
+        if (!interrupt->constant) {
             // then clear the interrrupt
+            this->clearInterrupt(interrupt);
+       }
+    }
 }

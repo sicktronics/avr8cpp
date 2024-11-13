@@ -1,15 +1,69 @@
-import { CPU } from './cpu';
+/* ~~~ In interrupt.h/interrupt.cpp ~~~ */
 
-export function avrInterrupt(cpu: CPU, addr: number) {
+// Import the cpu module
+// import { CPU } from './cpu';
+
+/*
+This function emulates how the CPU would handle an interrupt by saving the current program counter (PC) to the stack, updating the stack pointer, and jumping to a specified address (interrupt vector).
+*/
+/*
+ ✅ export function avrInterrupt(cpu: CPU, addr: number) {
+
+  // get the contents of the stack pointer
   const sp = cpu.dataView.getUint16(93, true);
-  cpu.data[sp] = cpu.pc & 0xff;
-  cpu.data[sp - 1] = (cpu.pc >> 8) & 0xff;
+
+  // Save the address of the next instruction (what PC currently points to)
+  cpu.data[sp] = cpu.pc & 0xff; // LSB stored at top of stack
+  cpu.data[sp - 1] = (cpu.pc >> 8) & 0xff; // next MSB stored at top of stack -1
+
+  // If we can address 22bits, store the MSB at top of stack -2
   if (cpu.pc22Bits) {
     cpu.data[sp - 2] = (cpu.pc >> 16) & 0xff;
   }
+
+  // After saving PC on the stack, the stack pointer is decremented by 2 or 3 bytes (depending on the program 
+  // counter width) to point to the new top of the stack.
   cpu.dataView.setUint16(93, sp - (cpu.pc22Bits ? 3 : 2), true);
+
+  // This line clears the I flag (bit 7 of SREG) by performing a bitwise AND with 0x7f (binary 01111111), 
+  // disabling further interrupts until the flag is set again.
   cpu.data[95] &= 0x7f; // clear global interrupt flag
+
+  // Simulate the number of cycles it would take the CPU to do this
   cpu.cycles += 2;
+
+  // Set PC to addr, which is the interrupt vector address where the interrupt handling routine is located.
+  // This change in PC redirects the CPU to start executing the interrupt service routine (ISR).
   cpu.pc = addr;
 }
+*/
 
+
+✅ /* ~~~ In TICK() function of CPU.cpp ~~~ */
+
+  /*
+  // Store next interrupt from cpu (this)
+  const { nextInterrupt } = this;
+
+  // If interruptsEnabled == true AND nextInterrupt > -1 (meaning there actually is another interrupt)
+  if (this.interruptsEnabled && nextInterrupt >= 0) {
+
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion - ignore cuz commented
+
+    // grab the next interrupt
+    const interrupt = this.pendingInterrupts[nextInterrupt]!;
+
+    // Call the avrInterrupt function to handle it, passing the address of the interrupt
+    avrInterrupt(this, interrupt.address);
+
+    // If constant is FALSE, clear it cuz we're done here
+    // ~~~ NOTE1: could add a restoration of PC and SP at this point if we want CPU to return to normal operation ~~~
+    if (!interrupt.constant) {
+      this.clearInterrupt(interrupt);
+
+    }
+    
+  }
+  */
+
+  /* ~~~ [DISREGARD FOR NOW, WAIT FOR RETI in intruction.ts] NOTE2: Could also have a dummy ISR, too! See interruptUnitTestPseudocode.txt ~~~ */

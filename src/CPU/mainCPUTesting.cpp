@@ -1,7 +1,7 @@
-#include <iostream>
-#include "CPU.h"
+// #include <iostream>
+// #include "CPU.h"
 
-using namespace std;
+// using namespace std;
 
 // Test write hook
 // bool wHFTest(u8 value, u8 oldValue, u16 address, u8 mask){
@@ -23,41 +23,41 @@ using namespace std;
 For testing clock stuff
 */
 
-// set up a test cpu const cpu = new CPU(new Uint16Array(1024), 8192);
-std::vector<u16> testPM(1024);
+// // set up a test cpu const cpu = new CPU(new Uint16Array(1024), 8192);
+// std::vector<u16> testPM(1024);
 
-CPU *cpu = new CPU(testPM);
+// CPU *cpu = new CPU(testPM);
 
-// Set up a type of array, ITestEvent, with two numbers: expected cycles vs actual cycles
-// set up an array of ITestEvents (const events: ITestEvent[] = [];)
-std::vector<int> events;
+// // Set up a type of array, ITestEvent, with two numbers: expected cycles vs actual cycles
+// // set up an array of ITestEvents (const events: ITestEvent[] = [];)
+// std::vector<int> events;
 
-// Define three different callback functions
-void callback1(){
-    std::cout << "callback 1 exectuing!!" << std::endl;
-    events.push_back(1);
-    events.push_back(cpu->cycles);
-    std::cout << "Num cycles taken: " << int(cpu->cycles) << std::endl;
-}
-void callback4(){
-    std::cout << "callback 4 exectuing!!" << std::endl;
-    events.push_back(4);
-    events.push_back(cpu->cycles);
-    std::cout << "Num cycles taken: " << int(cpu->cycles) << std::endl;
-}
-void callback10(){
-    std::cout << "callback 10 exectuing!!" << std::endl;
-    events.push_back(10);
-    events.push_back(cpu->cycles);
-    std::cout << "Num cycles taken: " << int(cpu->cycles) << std::endl;
-}
-void defaultCallback1(){}
-void defaultCallback2(){}
-void defaultCallback3(){}
+// // Define three different callback functions
+// void callback1(){
+//     std::cout << "callback 1 exectuing!!" << std::endl;
+//     events.push_back(1);
+//     events.push_back(cpu->cycles);
+//     std::cout << "Num cycles taken: " << int(cpu->cycles) << std::endl;
+// }
+// void callback4(){
+//     std::cout << "callback 4 exectuing!!" << std::endl;
+//     events.push_back(4);
+//     events.push_back(cpu->cycles);
+//     std::cout << "Num cycles taken: " << int(cpu->cycles) << std::endl;
+// }
+// void callback10(){
+//     std::cout << "callback 10 exectuing!!" << std::endl;
+//     events.push_back(10);
+//     events.push_back(cpu->cycles);
+//     std::cout << "Num cycles taken: " << int(cpu->cycles) << std::endl;
+// }
+// void defaultCallback1(){}
+// void defaultCallback2(){}
+// void defaultCallback3(){}
 
-int main(int argc, char* argv[]) {
+// int main(int argc, char* argv[]) {
 
-    cout << "tests commence!"<< endl;
+//     cout << "tests commence!"<< endl;
 
     // ✅ Test1: SP reset from CPU reset function
     // std::cout<< "expected value: " << cpu->SRAM_BYTES + REGISTER_SPACE - 1 << std::endl;
@@ -339,4 +339,4 @@ int main(int argc, char* argv[]) {
     // int result = cpu->readData(32);
     // cout << "data at location 32: " << result << endl;
 
-}
+// }
