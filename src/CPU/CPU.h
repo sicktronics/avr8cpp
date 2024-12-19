@@ -149,9 +149,13 @@ class CPU {
   GPIO initialization - circle back
   */
 
+ class AVRIOPort;
+
   // creating a collection ("Set") of type AVRIOPort called gpioPorts
+  std::vector<AVRIOPort *> GPIOPorts;
 
   // Creating an empty array of type AVRIOPort called gpioByPort
+  std::vector<AVRIOPort *> GPIOByPort;
 
   // 16-bit signed integer to track nextInterrupt (initialized to -1)
   i16 nextInterrupt = -1;
@@ -235,6 +239,11 @@ class CPU {
   Function for the "ticking" of the clock
   */
   void tick();
+
+  /*
+  A test function to fake an interrupt service routine + return
+  */
+  void fakeISRAndRETI();
 
    
 };

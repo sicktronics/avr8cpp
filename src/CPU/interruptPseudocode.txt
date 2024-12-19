@@ -56,8 +56,22 @@ This function emulates how the CPU would handle an interrupt by saving the curre
     // Call the avrInterrupt function to handle it, passing the address of the interrupt
     avrInterrupt(this, interrupt.address);
 
-    // If constant is FALSE, clear it cuz we're done here
+
     // ~~~ NOTE1: could add a restoration of PC and SP at this point if we want CPU to return to normal operation ~~~
+    // ~~~ NOTE2: We will do this but make it just a function in CPU for testing~~~
+    // For example...
+    /*   } else if (opcode === 0x9518) {
+      RETI, 1001 0101 0001 1000 */
+      const { pc22Bits } = cpu;
+      const i = cpu.dataView.getUint16(93, true) + (pc22Bits ? 3 : 2);
+      cpu.dataView.setUint16(93, i, true);
+      cpu.pc = (cpu.data[i - 1] << 8) + cpu.data[i] - 1;
+      if (pc22Bits) {
+        cpu.pc |= cpu.data[i - 2] << 16;
+      }
+    */
+
+    // If constant is FALSE, clear it cuz we're done here
     if (!interrupt.constant) {
       this.clearInterrupt(interrupt);
 

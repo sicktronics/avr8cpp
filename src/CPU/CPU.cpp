@@ -2,8 +2,6 @@
 #include "interrupt.h"
 #include <iostream>
 
-
-
 CPU::CPU(std::vector<u16> progMem, int SRAMSize){
 
     this->SRAM_BYTES = SRAMSize;
@@ -105,12 +103,12 @@ void CPU::writeData(u16 address, u8 value, u8 mask){
     writeHookFunction hookPtr = writeHookFunctions[address];
     // If hookPtr exists
     if(hookPtr) {
-        std::cout << "a hook exists at location " << address << std::endl;
+        // std::cout << "a hook exists at location " << address << std::endl;
         // If, by calling the writeHookFunction, we write the value at the location,
         // then we are already done!
         // !!!FOR NOW!!!: oldValue is the current data stored at address - may need to change later on
         if(writeHookFunctions[address](value, data[address], address, mask) == true){
-            std::cout << "Ok, the write hook function returned true, fam." << std::endl;
+            // std::cout << "Ok, the write hook function returned true, fam." << std::endl;
             return;
         }
     }
@@ -126,11 +124,11 @@ u8 CPU::readData(u16 address){
 
     // If we are past the general purpose I/O registers (we don't care about those) AND the hook at that address exists
     if(address >= 32 && hookPtr){
-        std::cout << "a readhook exists at location " << address << std::endl;
+        // std::cout << "a readhook exists at location " << address << std::endl;
         return this->readHookFunctions[address](address);
     }
     // Manually return the data
-    std::cout << "no readhook, will manually return" << std::endl;
+    // std::cout << "no readhook, will manually return" << std::endl;
     return this->data[address];
 }
 
@@ -444,10 +442,58 @@ void CPU::tick() {
         // call avrInterrupt and pass it the CPU and interrupt.address
         avrInterrupt(this, interrupt->address);
 
+        // ~~~ DELETE NEXT LINE: FOR TESTING PURPOSES ONLY: calling the fake interrupt ~~~ 
+        this->fakeISRAndRETI();
+
         // IF interrupt is not constant
         if (!interrupt->constant) {
             // then clear the interrrupt
             this->clearInterrupt(interrupt);
        }
     }
+}
+
+
+void CPU::fakeISRAndRETI() {
+
+    // Emergency routine that must be executed!!
+    int a = 1;
+    int b = 2;
+    int c = a + b;
+
+    // Increment to represent how long this function took (v fake)
+    this->cycles++;
+
+    u16 i = 0;
+
+    // Get the return address from the interrupt
+    if (this->pc22Bits) {
+        i = this->getSP() + 3;
+    }
+    else {
+        i = this->getSP() + 2;
+    }
+
+    // Set the SP to the return address
+    this->setSP(i);
+
+    // Removing the -1 for now, not relevant for our purposes
+    this->PC = ((this->data[i-1] << 8) + (this->data[i]));
+
+    if (pc22Bits) {
+    this->PC |= this->data[i - 2] << 16;
+    }
+
+    /*   } else if (opcode === 0x9518) {
+      RETI, 1001 0101 0001 1000 
+      const { pc22Bits } = cpu;
+      const i = cpu.dataView.getUint16(93, true) + (pc22Bits ? 3 : 2);
+
+      cpu.dataView.setUint16(93, i, true);
+
+      cpu.pc = (cpu.data[i - 1] << 8) + cpu.data[i] - 1;
+      if (pc22Bits) {
+        cpu.pc |= cpu.data[i - 2] << 16;
+      }
+    */
 }

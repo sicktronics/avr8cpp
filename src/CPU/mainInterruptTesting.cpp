@@ -2,7 +2,7 @@
 #include "interrupt.h"
 #include <iostream>
 
-int main(int argc, char* argv[]) {
+// int main(int argc, char* argv[]) {
 
 
 
@@ -30,6 +30,16 @@ int main(int argc, char* argv[]) {
     // std::cout << "MSB of PC (0x5) should be stored at position 0x7F: " << int(cpu->data[0x7F]) << std::endl;
     // // Global interupts should be disabled
     // std::cout << "SREG should just be 1 (interrupts enabled cleared): " << int(cpu->data[95]) << std::endl;
+
+    // // Optional, uncomment to test the fake ISR and RETI routine:
+    // cpu->fakeISRAndRETI();
+    // // PC should be 0x520
+    // std::cout << "PC should be 0x520 = 1312: " << cpu->PC << std::endl;
+    // // SP should be its old address: 0x80
+    // std::cout << "SP should be 0x80 = 128: " << int(cpu->data[93]) << std::endl;
+    // std::cout << "CPU cycles should be 3: " << cpu->cycles << std::endl;
+
+
 
 // ✅ TEST 2: Confirm it works with 22-bit addressing
     // // Create a cpu with a big honkin' progMem
@@ -60,6 +70,14 @@ int main(int argc, char* argv[]) {
     // // Confirm global interrupts CLEARED
     // std::cout << "SREG should just be 1 (interrupts enabled cleared): " << int(cpu->data[95]) << std::endl;
 
+    // // Optional, uncomment to test the fake ISR and RETI routine:
+    // cpu->fakeISRAndRETI();
+    // // PC should be 0x520
+    // std::cout << "PC should be 0x520 = 66848: " << cpu->PC << std::endl;
+    // // SP should be its old address: 0x80
+    // std::cout << "SP should be 0x80 = 128: " << int(cpu->data[93]) << std::endl;
+    // std::cout << "CPU cycles should be 3: " << cpu->cycles << std::endl;
+
 
 // ✅ TEST 3: Test the tick() function with interrupt handling - no restore
     // // Create a new CPU with program memory of 0x8000
@@ -81,4 +99,4 @@ int main(int argc, char* argv[]) {
     // // CPU cycles should be 2
     // std::cout << "CPU cycles: " << int(cpu->cycles) << std::endl;
 
-}
+// }
