@@ -1,17 +1,14 @@
-// #include <iostream>
-// #include "CPU.h"
+#include <iostream>
+#include "CPU.h"
 
-// using namespace std;
+using namespace std;
 
 // Test write hook
-// bool wHFTest(u8 value, u8 oldValue, u16 address, u8 mask){
-//     if(1==1){
-//         cpu->data[address] = value;
-//         return true;
-//     }
-//     else {
-//         return false;
-//     }
+// bool wHFTest(u8 value, u8 oldValue, u16 address, u8 mask, CPU *cpu = nullptr, AVRPortConfig *portConfig = nullptr){
+//     cout << "we here" << endl;
+//     cout << "address: " << address << endl;
+//     cpu->data[address] = value;
+//     return true;
 // }
 
 // Test read hook
@@ -24,9 +21,9 @@ For testing clock stuff
 */
 
 // // set up a test cpu const cpu = new CPU(new Uint16Array(1024), 8192);
-// std::vector<u16> testPM(1024);
+std::vector<u16> testPM(1024);
 
-// CPU *cpu = new CPU(testPM);
+CPU *cpu = new CPU(testPM);
 
 // // Set up a type of array, ITestEvent, with two numbers: expected cycles vs actual cycles
 // // set up an array of ITestEvents (const events: ITestEvent[] = [];)
@@ -321,7 +318,7 @@ For testing clock stuff
     // TEST 1: Manual write to data[]
     // want to store number "19" at data location 0
     // cpu->writeData(32, 19);
-    // cout << "test: " << int(cpu->data[0]) << endl;
+    // cout << "test: " << int(cpu->data[32]) << endl;
 
     // TEST 2: Manual read to data[]
     // int result = cpu->readData(0);
@@ -331,7 +328,7 @@ For testing clock stuff
     // Define a writeHookFunction (above) and have it live at loc 0 in the array
     // cpu->writeHookFunctions[32] = *wHFTest;
     // // Ok, now the hook should do the data writing, not the hard-write.
-    // cpu->writeData(32, 17);
+    // cpu->writeData(32, 17, 255, cpu);
     // cout << "data at location 32: " << int(cpu->data[32]) << endl;
 
     // TEST 4: Define sample readHook and use it to write to data

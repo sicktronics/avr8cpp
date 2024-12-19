@@ -2,6 +2,7 @@
 #include "interrupt.h"
 #include <iostream>
 
+
 CPU::CPU(std::vector<u16> progMem, int SRAMSize){
 
     this->SRAM_BYTES = SRAMSize;
@@ -96,19 +97,19 @@ void CPU::setUint16LittleEndian(int byteOffset, u16 value){
 //    }
 }
 
-// typedef bool (*writeHookFunction) (u8 value, u8 oldValue, u16 address, u8 mask);
-void CPU::writeData(u16 address, u8 value, u8 mask){
+// typedef bool (*writeHookFunction) (u8 value, u8 oldValue, u16 address, u8 mask, CPU *cpu, AVRPortConfig *portConfig);
+void CPU::writeData(u16 address, u8 value, u8 mask, CPU *cpu, AVRPortConfig *portConfig){
 
     // Grabbing a pointer to a given function
     writeHookFunction hookPtr = writeHookFunctions[address];
     // If hookPtr exists
     if(hookPtr) {
-        // std::cout << "a hook exists at location " << address << std::endl;
+        std::cout << "a hook exists at location " << address << std::endl;
         // If, by calling the writeHookFunction, we write the value at the location,
         // then we are already done!
         // !!!FOR NOW!!!: oldValue is the current data stored at address - may need to change later on
-        if(writeHookFunctions[address](value, data[address], address, mask) == true){
-            // std::cout << "Ok, the write hook function returned true, fam." << std::endl;
+        if(writeHookFunctions[address](value, data[address], address, mask, cpu, portConfig) == true){
+            std::cout << "Ok, the write hook function returned true, fam." << std::endl;
             return;
         }
     }

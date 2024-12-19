@@ -303,7 +303,7 @@ enum class InterruptMode {
 class AVRIOPort{
 
     public: 
-    AVRIOPort(CPU *cpu, AVRPortConfig *porConfig);
+    AVRIOPort(CPU *cpu, AVRPortConfig *portConfig);
 
     /* Vectors of our listeners for clock and GPIO */
     std::vector<externalClockListener> externalClockListeners;

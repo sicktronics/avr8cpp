@@ -2,6 +2,10 @@
 
 #pragma once 
 
+struct AVRPortConfig;
+
+class AVRIOPort;
+
 // Global consts and variables
 
 // Shorthands for different types
@@ -22,13 +26,17 @@ const int REGISTER_SPACE = 0x100;
 */
 const int MAX_INTERRUPTS = 128;
 
+class CPU;
+
 // Memory hook system for writing data to memory
 /*
  An array of function pointers - each will handle different functionality around writing data to a certain location. We will define different functions for different parts of the microcontroller - e.g., different writeHook functions for different I/O ports.
 
  May need to add functionality for typedefs that return void, but this should work. If the specific writeHook function writes data, returns true, if not, returns false
+
+ NOTE the addition of the CPU, AVRPortConfig pointer parameters to make life easier - will circle back if this causes issues
 */
-typedef bool (*writeHookFunction) (u8 value, u8 oldValue, u16 address, u8 mask);
+typedef bool (*writeHookFunction) (u8 value, u8 oldValue, u16 address, u8 mask, CPU *cpu, AVRPortConfig *portConfig);
 
 // Memory hook system for reading data from memory
 /*
@@ -131,7 +139,7 @@ class CPU {
   /*
   Function for writing data
   */
-  void writeData(u16 address, u8 value, u8 mask = 0xff);
+  void writeData(u16 address, u8 value, u8 mask = 0xff, CPU *cpu = nullptr, AVRPortConfig *portConfig = nullptr);
   // Matches params of writeHooks
   // void writeData(u8 value, u8 oldValue, u16 address, u8 mask);
 
@@ -146,16 +154,13 @@ class CPU {
   bool pc22Bits = false; 
 
   /*
-  GPIO initialization - circle back
+  GPIO initialization
   */
-
- class AVRIOPort;
-
   // creating a collection ("Set") of type AVRIOPort called gpioPorts
   std::vector<AVRIOPort *> GPIOPorts;
 
   // Creating an empty array of type AVRIOPort called gpioByPort
-  std::vector<AVRIOPort *> GPIOByPort;
+  AVRIOPort *GPIOByPort[255];
 
   // 16-bit signed integer to track nextInterrupt (initialized to -1)
   i16 nextInterrupt = -1;
