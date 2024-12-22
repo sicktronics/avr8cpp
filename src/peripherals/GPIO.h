@@ -1,6 +1,9 @@
 /* Importing CPU and vector */
 #include "../CPU/CPU.h"
 #include <vector> 
+#include <iostream>
+#include <functional>
+#include <set>
 
 #pragma once
 
@@ -134,7 +137,7 @@ struct portAConfig : AVRPortConfig {
         this->DDR = 0x21;
         this->PORT = 0x22;
         // NO External interrupts
-        this->externalInterrupts.clear(); 
+        this->externalInterrupts =  {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}; 
     }
 };
 
@@ -148,7 +151,7 @@ struct portBConfig : AVRPortConfig {
         // Not sure if this syntax works, but we are essentially instantiating a new PCINT0 for this
         this->pinChange = new PCINT0;
         // NO External interrupts
-        this->externalInterrupts.clear(); 
+        this->externalInterrupts =  {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}; 
     }
 };
 
@@ -164,7 +167,7 @@ struct portCConfig : AVRPortConfig {
         this->pinChange = new PCINT1;
 
         // No external interrupts
-        this->externalInterrupts.clear();
+        this->externalInterrupts =  {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
     }
 };
 
@@ -180,7 +183,7 @@ struct portDConfig : AVRPortConfig {
         this->pinChange = new PCINT2;
 
         // External interrupts: INT0, INT1 (skipping null values)
-        this->externalInterrupts = { nullptr, nullptr, new INT0, new INT1 };
+        this->externalInterrupts = { nullptr, nullptr, new INT0, new INT1, nullptr, nullptr, nullptr, nullptr};
     }
 };
 
@@ -193,7 +196,7 @@ struct portEConfig : AVRPortConfig {
         this->PORT = 0x2e;
 
         // No external interrupts
-        this->externalInterrupts.clear();
+        this->externalInterrupts =  {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
     }
 };
 
@@ -206,7 +209,7 @@ struct portFConfig : AVRPortConfig {
         this->PORT = 0x31;
 
         // No external interrupts
-        this->externalInterrupts.clear();
+        this->externalInterrupts =  {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
     }
 };
 
@@ -219,7 +222,7 @@ struct portGConfig : AVRPortConfig {
         this->PORT = 0x34;
 
         // No external interrupts
-        this->externalInterrupts.clear();
+        this->externalInterrupts =  {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
     }
 };
 
@@ -234,7 +237,7 @@ struct portGConfig : AVRPortConfig {
 //         this->PORT = 0x102;
 
 //         // No external interrupts
-//         this->externalInterrupts.clear();
+//         this->externalInterrupts =  {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 //     }
 // };
 
@@ -247,7 +250,7 @@ struct portGConfig : AVRPortConfig {
 //         this->PORT = 0x105;
 
 //         // No external interrupts
-//         this->externalInterrupts.clear();
+//         this->externalInterrupts =  {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 //     }
 // };
 
@@ -260,7 +263,7 @@ struct portGConfig : AVRPortConfig {
 //         this->PORT = 0x108;
 
 //         // No external interrupts
-//         this->externalInterrupts.clear();
+//         this->externalInterrupts =  {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 //     }
 // };
 
@@ -273,7 +276,7 @@ struct portGConfig : AVRPortConfig {
 //         this->PORT = 0x10b;
 
 //         // No external interrupts
-//         this->externalInterrupts.clear();
+//         this->externalInterrupts =  {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 //     }
 // };
 
@@ -304,6 +307,12 @@ class AVRIOPort{
 
     public: 
     AVRIOPort(CPU *cpu, AVRPortConfig *portConfig);
+
+    /* Pointer to the main cpu passed into the constructor and used by the functions */
+    CPU *mainCPU;
+
+    /* Pointer to the main portConfig passed into the constructor and used by the functions */
+    AVRPortConfig *mainPortConfig;
 
     /* Vectors of our listeners for clock and GPIO */
     std::vector<externalClockListener> externalClockListeners;
@@ -340,10 +349,39 @@ class AVRIOPort{
     *   to input, and PinState.InputPullUp if the pin is set to input and the internal pull-up resistor has
     *   been enabled.
     */
-   /* Circle back AFTER constructor */
-    PinState pinState(int index);
+    PinState pinState(u8 index);
+
+    /**
+     * Sets the input value for the given pin. This is the value that
+     * will be returned when reading from the PIN register.
+     */
+    void setPin(u8 index, bool value);
+
+    /**
+     * Internal method - do not call this directly!
+     * Used by the timer compare output units to override GPIO pins.
+     */
+    void timerOverridePin(u8 pin, PinOverrideMode mode);
+
+    /* Used for updating the value of the PIN register of a given io port via a new DDR value */
+    void updatePinRegister(u8 ddr);
 
     /* Function for determining whether an interrupt should be triggered upon a changing pin state (switching from rising edge to falling edge or vice versa) */
     void toggleInterrupt(u8 pin, bool risingEdge);
+
+
+    /* This function creates a "write hook" for a given register that:
+        - Updates CPU state when a specific register is written to.
+        - Handles the logic related to enabling, disabling, or clearing interrupt flags.
+        - Ensures the system correctly checks and responds to external interrupts after register modifications. 
+        registerType can be: 'flag' | 'mask' | 'other' = 'other'    
+    */
+    void attachInterruptHook(int reg, std::string registerType = "other");
+
+    /* In this function, we iterate over all of the external interrupts. We perform some checks and queue the interrupt if the configuration is set up for low level. */
+    void checkExternalInterrupts();
+
+    /* Keeping GPIO listeners up to date with changes to values */
+    void writeGPIO(u8 value, u8 ddr);
 
 };

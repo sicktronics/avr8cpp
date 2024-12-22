@@ -7,6 +7,11 @@ CPU::CPU(std::vector<u16> progMem, int SRAMSize){
 
     this->SRAM_BYTES = SRAMSize;
 
+    // Set up the writeHookVector with the correct size and fill with nullptr
+    this->writeHookVector = std::vector<std::shared_ptr<std::function<bool(u8, u8, u16, u8)>>>(8448, nullptr);
+
+    // Next, to fill the vector with null?
+
     // STEP 1: fill program memory with contents of progMem
     for(int i = 0; i < progMem.size(); i++) {
         this->programMemory.push_back(progMem[i]);
@@ -97,25 +102,28 @@ void CPU::setUint16LittleEndian(int byteOffset, u16 value){
 //    }
 }
 
-// typedef bool (*writeHookFunction) (u8 value, u8 oldValue, u16 address, u8 mask, CPU *cpu, AVRPortConfig *portConfig);
-void CPU::writeData(u16 address, u8 value, u8 mask, CPU *cpu, AVRPortConfig *portConfig){
+// typedef bool (*writeHookFunction) (u8 value, u8 oldValue, u16 address, u8 mask);
+void CPU::writeData(u16 address, u8 value, u8 mask){
 
     // Grabbing a pointer to a given function
-    writeHookFunction hookPtr = writeHookFunctions[address];
+    // writeHookFunction hookPtr = writeHookFunctions[address];
+    auto hookPtr = this->writeHookVector[address];
+
     // If hookPtr exists
-    if(hookPtr) {
+    if(hookPtr != nullptr) {
         std::cout << "a hook exists at location " << address << std::endl;
         // If, by calling the writeHookFunction, we write the value at the location,
         // then we are already done!
         // !!!FOR NOW!!!: oldValue is the current data stored at address - may need to change later on
-        if(writeHookFunctions[address](value, data[address], address, mask, cpu, portConfig) == true){
+        // if(writeHookFunctions[address](value, data[address], address, mask) == true){
+        if((*this->writeHookVector[address])(value, data[address], address, mask) == true){
             std::cout << "Ok, the write hook function returned true, fam." << std::endl;
             return;
         }
     }
     // But in the case where we don't have a writeHookFunction for that location,
     // just hard-write the value at that location
-    // std::cout << "should not be reaching here" << std::endl;
+    std::cout << "No writeHooky :(" << std::endl;
     this->data[address] = value;
 }
 
@@ -444,7 +452,7 @@ void CPU::tick() {
         avrInterrupt(this, interrupt->address);
 
         // ~~~ DELETE NEXT LINE: FOR TESTING PURPOSES ONLY: calling the fake interrupt ~~~ 
-        this->fakeISRAndRETI();
+        // this->fakeISRAndRETI();
 
         // IF interrupt is not constant
         if (!interrupt->constant) {
@@ -498,3 +506,24 @@ void CPU::fakeISRAndRETI() {
       }
     */
 }
+
+// int main(){
+    // std::vector<u16> testPM(1024);
+
+    // CPU *cpu = new CPU(testPM);
+    // int x=2;
+    // int y=3;
+    // std::cout << "here" << std::endl;
+    // std::cout << int(cpu->writeHookVector.size()) << std::endl;
+
+    // cpu->writeHookVector.emplace(cpu->writeHookVector.begin()+5,([x](u8 test, u8 test2, u16 test3, u8 test4){return true;}));
+    // cpu->writeHookVector.emplace(cpu->writeHookVector.begin()+6,([y](u8 test, u8 test2, u16 test3, u8 test4){return true;}));
+
+    // std::cout << "here 2" << std::endl;
+
+    // for(int i = 0; i<10; i++){
+        
+    //     std::cout << &cpu->writeHookVector[i] << std::endl;
+    // }
+
+// }

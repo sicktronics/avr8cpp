@@ -1,3 +1,6 @@
+#include <iostream>
+#include <functional>
+#include <variant>
 #include <vector>
 
 #pragma once 
@@ -33,10 +36,10 @@ class CPU;
  An array of function pointers - each will handle different functionality around writing data to a certain location. We will define different functions for different parts of the microcontroller - e.g., different writeHook functions for different I/O ports.
 
  May need to add functionality for typedefs that return void, but this should work. If the specific writeHook function writes data, returns true, if not, returns false
-
- NOTE the addition of the CPU, AVRPortConfig pointer parameters to make life easier - will circle back if this causes issues
 */
-typedef bool (*writeHookFunction) (u8 value, u8 oldValue, u16 address, u8 mask, CPU *cpu, AVRPortConfig *portConfig);
+// typedef bool (*writeHookFunction) (u8 value, u8 oldValue, u16 address, u8 mask);
+
+
 
 // Memory hook system for reading data from memory
 /*
@@ -133,13 +136,16 @@ class CPU {
   /*
   Array of write hook and read hook function pointers - size is # of SRAM bytes + REGISTER_SPACE, same size as data array (?)
   */
-  writeHookFunction writeHookFunctions[8192 + REGISTER_SPACE];
+  // writeHookFunction writeHookFunctions[8192 + REGISTER_SPACE];
+  // XXX Transitioning to a writeHookVector
+  std::vector<std::shared_ptr<std::function<bool(u8, u8, u16, u8)>>> writeHookVector;
+
   readHookFunction readHookFunctions [8192 + REGISTER_SPACE];
 
   /*
   Function for writing data
   */
-  void writeData(u16 address, u8 value, u8 mask = 0xff, CPU *cpu = nullptr, AVRPortConfig *portConfig = nullptr);
+  void writeData(u16 address, u8 value, u8 mask = 0xff);
   // Matches params of writeHooks
   // void writeData(u8 value, u8 oldValue, u16 address, u8 mask);
 

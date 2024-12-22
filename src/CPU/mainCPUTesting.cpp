@@ -20,10 +20,18 @@ using namespace std;
 For testing clock stuff
 */
 
-// // set up a test cpu const cpu = new CPU(new Uint16Array(1024), 8192);
-std::vector<u16> testPM(1024);
+// XXX New test writeHook
+// auto wHFTest = std::make_shared<std::function<bool(u8, u8, u16, u8)>>(
+//     [](u8 value, u8 oldValue, u16 address, u8 mask) {
+//         std::cout << "value: " << int(value) << " successsss" << std::endl;
+//         return true;
+//     });
 
-CPU *cpu = new CPU(testPM);
+
+// // set up a test cpu const cpu = new CPU(new Uint16Array(1024), 8192);
+// std::vector<u16> testPM(1024);
+
+// CPU *cpu = new CPU(testPM);
 
 // // Set up a type of array, ITestEvent, with two numbers: expected cycles vs actual cycles
 // // set up an array of ITestEvents (const events: ITestEvent[] = [];)
@@ -320,6 +328,11 @@ CPU *cpu = new CPU(testPM);
     // cpu->writeData(32, 19);
     // cout << "test: " << int(cpu->data[32]) << endl;
 
+    // XXX Redo TEST 1: Manual write to data[] ✅
+    // want to store number "19" at data location 0
+    // cpu->writeData(32, 19);
+    // cout << "test: " << int(cpu->data[32]) << endl;    
+
     // TEST 2: Manual read to data[]
     // int result = cpu->readData(0);
     // cout << "data read: " << result << endl;
@@ -329,6 +342,13 @@ CPU *cpu = new CPU(testPM);
     // cpu->writeHookFunctions[32] = *wHFTest;
     // // Ok, now the hook should do the data writing, not the hard-write.
     // cpu->writeData(32, 17, 255, cpu);
+    // cout << "data at location 32: " << int(cpu->data[32]) << endl;
+
+    // XXX Redo TEST 3: Define sample writeHook and use it to write to data ✅
+    // Define a writeHookFunction (above) and have it live at loc 0 in the array
+    // cpu->writeHookVector[32] = wHFTest;
+    // Ok, now the hook should do the data writing, not the hard-write.
+    // cpu->writeData(32, 17);
     // cout << "data at location 32: " << int(cpu->data[32]) << endl;
 
     // TEST 4: Define sample readHook and use it to write to data
