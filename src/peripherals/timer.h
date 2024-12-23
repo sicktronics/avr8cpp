@@ -4,6 +4,10 @@
 
 #pragma once
 
+// Declare instances for port configurations
+extern portDConfig PDConfig;
+extern portBConfig PBConfig;
+
 /* Timer 01 dividers  - last two are for external clock */
 // int timer01Dividers[] = {0, 1, 8, 64, 256, 1024, 0, 0};
 std::unordered_map<int, int> timer01Dividers = {
@@ -18,7 +22,7 @@ std::unordered_map<int, int> timer01Dividers = {
 };
 
 /* External clock module */
-enum ExternalClockMode {
+enum class ExternalClockMode {
   FallingEdge = 6,
   RisingEdge = 7,
 };
@@ -75,4 +79,390 @@ struct AVRTimerConfig {
     // External clock pin (optional, 0 = unused)
     u16 externalClockPort;
     u8 externalClockPin;
+};
+
+/* Default timer configuration - These are differnet for some devices (e.g. ATtiny85) */
+namespace DefaultTimerBits {
+    constexpr u8 TOV = 1;
+    constexpr u8 OCFA = 2;
+    constexpr u8 OCFB = 4;
+    constexpr u8 OCFC = 0; // Unused
+
+    constexpr u8 TOIE = 1;
+    constexpr u8 OCIEA = 2;
+    constexpr u8 OCIEB = 4;
+    constexpr u8 OCIEC = 0; // Unused
+}
+
+// Timer 0 Configuration
+//Check this...
+struct timer0Config: AVRTimerConfig {
+    timer0Config() {
+        bits = 8;
+        captureInterrupt = 0; // Not available
+        compAInterrupt = 0x1c;
+        compBInterrupt = 0x1e;
+        compCInterrupt = 0;
+        ovfInterrupt = 0x20;
+        TIFR = 0x35;
+        OCRA = 0x47;
+        OCRB = 0x48;
+        OCRC = 0; // Not available
+        ICR = 0;  // Not available
+        TCNT = 0x46;
+        TCCRA = 0x44;
+        TCCRB = 0x45;
+        TCCRC = 0; // Not available
+        TIMSK = 0x6e;
+        dividers = timer01Dividers;
+        TOV = DefaultTimerBits::TOV;
+        OCFA = DefaultTimerBits::OCFA;
+        OCFB = DefaultTimerBits::OCFB;
+        OCFC = DefaultTimerBits::OCFC;
+        TOIE = DefaultTimerBits::TOIE;
+        OCIEA = DefaultTimerBits::OCIEA;
+        OCIEB = DefaultTimerBits::OCIEB;
+        OCIEC = DefaultTimerBits::OCIEC;
+        compPortA = PDConfig.PORT;
+        compPinA = 6;
+        compPortB = PDConfig.PORT;
+        compPinB = 5;
+        compPortC = 0; // Not available
+        compPinC = 0;
+        externalClockPort = PDConfig.PORT;
+        externalClockPin = 4;
+    }
+};
+
+// Timer 1 Configuration
+struct timer1Config: AVRTimerConfig {
+    timer1Config() {
+        bits = 16;
+        captureInterrupt = 0x14;
+        compAInterrupt = 0x16;
+        compBInterrupt = 0x18;
+        compCInterrupt = 0;
+        ovfInterrupt = 0x1a;
+        TIFR = 0x36;
+        OCRA = 0x88;
+        OCRB = 0x8a;
+        OCRC = 0; // Not available
+        ICR = 0x86;
+        TCNT = 0x84;
+        TCCRA = 0x80;
+        TCCRB = 0x81;
+        TCCRC = 0x82;
+        TIMSK = 0x6f;
+        dividers = timer01Dividers;
+        TOV = DefaultTimerBits::TOV;
+        OCFA = DefaultTimerBits::OCFA;
+        OCFB = DefaultTimerBits::OCFB;
+        OCFC = DefaultTimerBits::OCFC;
+        TOIE = DefaultTimerBits::TOIE;
+        OCIEA = DefaultTimerBits::OCIEA;
+        OCIEB = DefaultTimerBits::OCIEB;
+        OCIEC = DefaultTimerBits::OCIEC;
+        compPortA = PBConfig.PORT;
+        compPinA = 1;
+        compPortB = PBConfig.PORT;
+        compPinB = 2;
+        compPortC = 0; // Not available
+        compPinC = 0;
+        externalClockPort = PDConfig.PORT;
+        externalClockPin = 5;
+    }
+};
+
+// Timer 2 Configuration
+struct timer2Config : AVRTimerConfig {
+    timer2Config() {
+        bits = 8;
+        captureInterrupt = 0; // Not available
+        compAInterrupt = 0x0e;
+        compBInterrupt = 0x10;
+        compCInterrupt = 0;
+        ovfInterrupt = 0x12;
+        TIFR = 0x37;
+        OCRA = 0xb3;
+        OCRB = 0xb4;
+        OCRC = 0; // Not available
+        ICR = 0;  // Not available
+        TCNT = 0xb2;
+        TCCRA = 0xb0;
+        TCCRB = 0xb1;
+        TCCRC = 0; // Not available
+        TIMSK = 0x70;
+        dividers = {
+            {0, 0}, {1, 1}, {2, 8}, {3, 32}, {4, 64}, {5, 128}, {6, 256}, {7, 1024},
+        };
+        TOV = DefaultTimerBits::TOV;
+        OCFA = DefaultTimerBits::OCFA;
+        OCFB = DefaultTimerBits::OCFB;
+        OCFC = DefaultTimerBits::OCFC;
+        TOIE = DefaultTimerBits::TOIE;
+        OCIEA = DefaultTimerBits::OCIEA;
+        OCIEB = DefaultTimerBits::OCIEB;
+        OCIEC = DefaultTimerBits::OCIEC;
+        compPortA = PBConfig.PORT;
+        compPinA = 3;
+        compPortB = PDConfig.PORT;
+        compPinB = 3;
+        compPortC = 0; // Not available
+        compPinC = 0;
+        externalClockPort = 0; // Not available
+        externalClockPin = 0;
+    }
+};
+
+/* Configuring the WGM (Waveform Generation Mode) bits:*/
+
+enum class TimerMode {
+  Normal,
+  PWMPhaseCorrect,
+  CTC,
+  FastPWM,
+  PWMPhaseFrequencyCorrect,
+  Reserved
+};
+
+enum class TOVUpdateMode {
+  Max,
+  Top,
+  Bottom
+};
+
+enum class OCRUpdateMode {
+  Immediate,
+  Top,
+  Bottom
+};
+
+// Special constants for Top values
+constexpr int TopOCRAVal = 1;
+constexpr int TopICRVal = 2;
+
+// Enable Toggle mode for OCxA in PWM Wave Generation mode
+constexpr int OCToggle = 1;
+
+// TimerTopValue enum that acts like a union type--these are the values it can take on
+enum TimerTopValue {
+    Value0xFF = 0xff,
+    Value0x1FF = 0x1ff,
+    Value0x3FF = 0x3ff,
+    Value0xFFFF = 0xffff,
+    TopOCRA = TopOCRAVal,
+    TopICR = TopICRVal
+};
+
+// Struct for WGM
+struct WGMConfig {
+    TimerMode mode;           // Timer mode (e.g., Normal, FastPWM)
+    TimerTopValue topValue;   // Top value (e.g., 0xff, TopOCRA)
+    OCRUpdateMode ocrUpdate;  // OCR update mode
+    TOVUpdateMode tovUpdate;  // TOV update mode
+    int flags;              // WGM bits value
+};
+
+// Array of 8-bit WGM configurations
+constexpr WGMConfig wgmModes8Bit[] = {
+    //  {TimerMode, TimerTopValue, OCRUpdateMode, TOVUpdateMode, WGM Bits}
+    {TimerMode::Normal, TimerTopValue::Value0xFF, OCRUpdateMode::Immediate, TOVUpdateMode::Max, 0}, // 0
+    {TimerMode::PWMPhaseCorrect, TimerTopValue::Value0xFF, OCRUpdateMode::Top, TOVUpdateMode::Bottom, 0}, // 1
+    {TimerMode::CTC, TimerTopValue::TopOCRA, OCRUpdateMode::Immediate, TOVUpdateMode::Max, 0}, // 2
+    {TimerMode::FastPWM, TimerTopValue::Value0xFF, OCRUpdateMode::Bottom, TOVUpdateMode::Max, 0}, // 3
+    {TimerMode::Reserved, TimerTopValue::Value0xFF, OCRUpdateMode::Immediate, TOVUpdateMode::Max, 0}, // 4
+    {TimerMode::PWMPhaseCorrect, TimerTopValue::TopOCRA, OCRUpdateMode::Top, TOVUpdateMode::Bottom, OCToggle}, // 5
+    {TimerMode::Reserved, TimerTopValue::Value0xFF, OCRUpdateMode::Immediate, TOVUpdateMode::Max, 0}, // 6
+    {TimerMode::FastPWM, TimerTopValue::TopOCRA, OCRUpdateMode::Bottom, TOVUpdateMode::Top, OCToggle}, // 7
+};
+
+// Array of 16-bit WGM configurations
+constexpr WGMConfig wgmModes16Bit[] = {
+    //  {TimerMode, TimerTopValue, OCRUpdateMode, TOVUpdateMode, WGM Bits}
+    {TimerMode::Normal, TimerTopValue::Value0xFFFF, OCRUpdateMode::Immediate, TOVUpdateMode::Max, 0}, // 0
+    {TimerMode::PWMPhaseCorrect, TimerTopValue::Value0xFF, OCRUpdateMode::Top, TOVUpdateMode::Bottom, 0}, // 1
+    {TimerMode::PWMPhaseCorrect, TimerTopValue::Value0x1FF, OCRUpdateMode::Top, TOVUpdateMode::Bottom, 0}, // 2
+    {TimerMode::PWMPhaseCorrect, TimerTopValue::Value0x3FF, OCRUpdateMode::Top, TOVUpdateMode::Bottom, 0}, // 3
+    {TimerMode::CTC, TimerTopValue::TopOCRA, OCRUpdateMode::Immediate, TOVUpdateMode::Max, 0}, // 4
+    {TimerMode::FastPWM, TimerTopValue::Value0xFF, OCRUpdateMode::Bottom, TOVUpdateMode::Top, 0}, // 5
+    {TimerMode::FastPWM, TimerTopValue::Value0x1FF, OCRUpdateMode::Bottom, TOVUpdateMode::Top, 0}, // 6
+    {TimerMode::FastPWM, TimerTopValue::Value0x3FF, OCRUpdateMode::Bottom, TOVUpdateMode::Top, 0}, // 7
+    {TimerMode::PWMPhaseFrequencyCorrect, TimerTopValue::TopICR, OCRUpdateMode::Bottom, TOVUpdateMode::Bottom, 0}, // 8
+    {TimerMode::PWMPhaseFrequencyCorrect, TimerTopValue::TopOCRA, OCRUpdateMode::Bottom, TOVUpdateMode::Bottom, OCToggle}, // 9
+    {TimerMode::PWMPhaseCorrect, TimerTopValue::TopICR, OCRUpdateMode::Top, TOVUpdateMode::Bottom, 0}, // 10
+    {TimerMode::PWMPhaseCorrect, TimerTopValue::TopOCRA, OCRUpdateMode::Top, TOVUpdateMode::Bottom, OCToggle}, // 11
+    {TimerMode::CTC, TimerTopValue::TopICR, OCRUpdateMode::Immediate, TOVUpdateMode::Max, 0}, // 12
+    {TimerMode::Reserved, TimerTopValue::Value0xFFFF, OCRUpdateMode::Immediate, TOVUpdateMode::Max, 0}, // 13
+    {TimerMode::FastPWM, TimerTopValue::TopICR, OCRUpdateMode::Bottom, TOVUpdateMode::Top, OCToggle}, // 14
+    {TimerMode::FastPWM, TimerTopValue::TopOCRA, OCRUpdateMode::Bottom, TOVUpdateMode::Top, OCToggle}, // 15
+};
+
+// Enum for possible values for compare bits
+enum CompBitsValue : int {
+    Zero = 0,
+    One = 1,
+    Two = 2,
+    Three = 3
+};
+
+// Function for translating compare bits into pin override modes
+PinOverrideMode compToOverride(CompBitsValue comp) {
+    switch (comp) {
+        case CompBitsValue::One:
+            return PinOverrideMode::Toggle;
+        case CompBitsValue::Two:
+            return PinOverrideMode::Clear;
+        case CompBitsValue::Three:
+            return PinOverrideMode::Set;
+        default:
+            return PinOverrideMode::Enable;
+    }
+}
+
+
+// Force Output Compare (FOC) bits
+constexpr int FOCA = 1 << 7;
+constexpr int FOCB = 1 << 6;
+constexpr int FOCC = 1 << 5;
+
+/* -fin- WGM config */
+
+/* The AVRTimer class! */
+class AVRTimer {
+  public:
+
+  const u16 MAX; // Calculated based on the config's bit size (16-bit or 8-bit)
+  u64 lastCycle = 0; // Track the last CPU cycle
+  u16 ocrA = 0; // Output Compare Register A
+  u16 nextOcrA = 0; // Next OCR A value
+  u16 ocrB = 0; // Output Compare Register B
+  u16 nextOcrB = 0; // Next OCR B value
+  bool hasOCRC; // Whether OCR C is available
+  u16 ocrC = 0; // Output Compare Register C
+  u16 nextOcrC = 0; // Next OCR C value
+  OCRUpdateMode ocrUpdateMode = OCRUpdateMode::Immediate; // OCR update mode
+  TOVUpdateMode tovUpdateMode = TOVUpdateMode::Max; // Timer Overflow (TOV) update mode
+  u16 icr = 0; // Input Capture Register (only for 16-bit timers)
+  TimerMode timerMode; // Current timer mode
+  TimerTopValue topValue; // Top value for the timer
+  u16 tcnt = 0; // Timer/Counter register
+  u16 tcntNext = 0; // Next Timer/Counter value
+  CompBitsValue compA; // Compare bits for channel A
+  CompBitsValue compB; // Compare bits for channel B
+  CompBitsValue compC; // Compare bits for channel C
+  bool tcntUpdated = false; // Whether TCNT was updated
+  bool updateDivider = false; // Whether the divider needs updating
+  bool countingUp = true; // Whether the timer is counting up
+  int divider = 0; // Timer clock divider
+  AVRIOPort* externalClockPort = nullptr; // External clock port
+  bool externalClockRisingEdge = false; // External clock mode: rising edge
+  u8 highByteTemp = 0; // Temporary high-byte register for 16-bit access (section 16.3 of the datasheet)
+
+  // For tracking the mainCPU and config
+  CPU *mainCPU;
+
+  AVRTimerConfig *mainConfig;
+
+  /* Interrupts */
+  struct OVFInterrupt: AVRInterruptConfig {
+    OVFInterrupt(const AVRTimerConfig *config) {
+        address = config->ovfInterrupt;
+        flagRegister = config->TIFR;
+        flagMask = config->TOV;
+        enableRegister = config->TIMSK;
+        enableMask = config->TOIE;
+    }
+};
+
+struct OCFAInterrupt : public AVRInterruptConfig {
+    OCFAInterrupt(const AVRTimerConfig *config) {
+        address = config->compAInterrupt;
+        flagRegister = config->TIFR;
+        flagMask = config->OCFA;
+        enableRegister = config->TIMSK;
+        enableMask = config->OCIEA;
+    }
+};
+
+struct OCFBInterrupt : public AVRInterruptConfig {
+    OCFBInterrupt(const AVRTimerConfig *config) {
+        address = config->compBInterrupt;
+        flagRegister = config->TIFR;
+        flagMask = config->OCFB;
+        enableRegister = config->TIMSK;
+        enableMask = config->OCIEB;
+    }
+};
+
+struct OCFCInterrupt : public AVRInterruptConfig {
+    OCFCInterrupt(const AVRTimerConfig *config) {
+        address = config->compCInterrupt;
+        flagRegister = config->TIFR;
+        flagMask = config->OCFC;
+        enableRegister = config->TIMSK;
+        enableMask = config->OCIEC;
+    }
+};
+
+  /* One of each interrupt for use */
+  OCFAInterrupt *defaultOCFAInterrupt;
+  OCFBInterrupt *defaultOCFBInterrupt;
+  OCFCInterrupt *defaultOCFCInterrupt;
+  OVFInterrupt *defaultOVFInterrupt;
+
+  /* System reset! */
+  void reset();
+
+  /* Getters for different registers*/
+
+  u8 getTCCRA();
+
+  u8 getTCCRB();
+
+  u8 getTIMSK();
+
+  /* Get the Clock Select (CS) bits */
+  u8 getCS();
+
+  /* Get the Waveform Generation Mode (WGM) bits */
+  u8 getWGM();
+
+  /* Get the TOP value for the timer */
+  u16 getTOP();
+
+  /* Get the OCR mask for the timer */
+  u16 getOCRMask();
+
+  /* Expose the raw value of TCNT for debugging */
+  u16 getDebugTCNT();
+
+  /* Key member functions */
+
+  /* For updating the Waveform Generation Mode (WGM) */
+  void updateWGMConfig();
+
+  /* For incrementing/decrementing the value and checking for trigger points */
+  u16 phasePwmCount(u16 value, u8 delta);
+
+  /* For setting interrupt flags when different compare thresholds are reached */
+  void timerUpdated(u16 value, u16 prevValue);
+
+  /* Checking for force compare and updating if needed */
+  void checkForceCompare(u8 value);
+
+  /* For updating a compare pin */
+  void updateCompPin(CompBitsValue compValue, char pinName, bool bottom = false);
+
+  /* For updating compare pin A */
+  void updateCompA(PinOverrideMode value);
+
+  /* For updating compare pin B */
+  void updateCompB(PinOverrideMode value);
+
+  /* For updating compare pin C */
+  void updateCompC(PinOverrideMode value);
+
+
+  /* Constructor */
+  AVRTimer(CPU *cpu, AVRTimerConfig *config);
 };

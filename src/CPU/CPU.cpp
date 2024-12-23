@@ -165,7 +165,7 @@ bool CPU::getInterruptsEnabled(){
 }
 
 void CPU::setInterruptFlag(AVRInterruptConfig *interrupt) {
-
+    std::cout << "Inside set interrupt flag" << std::endl;
     const u16 flagReg = interrupt->flagRegister;
     const u8 flagMsk = interrupt->flagMask;
     const u16 enReg = interrupt->enableRegister;
