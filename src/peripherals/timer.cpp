@@ -4,20 +4,161 @@
 portDConfig PDConfig;
 portBConfig PBConfig;
 
+/* Tested: ✅ */
 AVRTimer::AVRTimer(CPU *cpu, AVRTimerConfig *config) : MAX(config->bits == 16 ? 0xffff : 0xff),
       hasOCRC(config->OCRC > 0) 
 {
+    // Setting up the mainCPU and mainConfig
     this->mainCPU = cpu;
     this->mainConfig = config;
 
     // Setting up the main interrupts
-  this->defaultOCFAInterrupt = new OCFAInterrupt(this->mainConfig);
-  this->defaultOCFBInterrupt = new OCFBInterrupt(this->mainConfig);
-  this->defaultOCFCInterrupt = new OCFCInterrupt(this->mainConfig);
-  this->defaultOVFInterrupt = new OVFInterrupt(this->mainConfig);
+    this->defaultOCFAInterrupt = new OCFAInterrupt(this->mainConfig);
+    this->defaultOCFBInterrupt = new OCFBInterrupt(this->mainConfig);
+    this->defaultOCFCInterrupt = hasOCRC ? new OCFCInterrupt(config) : nullptr;
+    this->defaultOVFInterrupt = new OVFInterrupt(this->mainConfig);
 
+    // Update Waveform Generation Mode (WGM) configuration
+    this->updateWGMConfig();
 
-  this->updateWGMConfig();
+    // Setup read hook for TCNT
+    auto readTCNTHook = std::make_shared<std::function<u8(u16)>>([this](u16 address) -> u8 {
+        std::cout<< "Inside read TCNT hook" << std::endl;
+        this->count(false);
+        // Shift over by 8 bits
+        if (this->mainConfig->bits == 16) {
+            this->mainCPU->data[address + 1] = this->tcnt >> 8;
+        }
+        return (this->mainCPU->data[address] = this->tcnt & 0xff);
+    });
+    this->mainCPU->readHookFunctions[config->TCNT] = readTCNTHook;
+
+    // Setup write hooks
+    this->mainCPU->writeHookVector[config->TCNT] = std::make_shared<std::function<bool(u8, u8, u16, u8)>>(
+        [this](u8 value, u8, u16, u8) -> bool {
+            std::cout<< "Inside write TCNT hook" << std::endl;
+            this->tcntNext = (this->highByteTemp << 8) | value;
+            this->countingUp = true;
+            this->tcntUpdated = true;
+            this->mainCPU->updateClockEvent(std::make_shared<std::function<void(void)>>([this]() { this->count(); }), 0);
+            if (this->divider) {
+                this->timerUpdated(this->tcntNext, this->tcntNext);
+            }
+            return true;
+        });
+
+    this->mainCPU->writeHookVector[config->OCRA] = std::make_shared<std::function<bool(u8, u8, u16, u8)>>(
+        [this](u8 value, u8, u16, u8) -> bool {
+            std::cout<< "Inside write OCRA hook" << std::endl;
+            this->nextOcrA = (this->highByteTemp << 8) | value;
+            if (this->ocrUpdateMode == OCRUpdateMode::Immediate) {
+                this->ocrA = this->nextOcrA;
+            }
+            return true;
+        });
+
+    this->mainCPU->writeHookVector[config->OCRB] = std::make_shared<std::function<bool(u8, u8, u16, u8)>>(
+        [this](u8 value, u8, u16, u8) -> bool {
+            std::cout<< "Inside write OCRB hook" << std::endl;
+            this->nextOcrB = (this->highByteTemp << 8) | value;
+            if (this->ocrUpdateMode == OCRUpdateMode::Immediate) {
+                this->ocrB = this->nextOcrB;
+            }
+            return true;
+        });
+    
+    if (hasOCRC) {
+        this->mainCPU->writeHookVector[config->OCRC] = std::make_shared<std::function<bool(u8, u8, u16, u8)>>(
+            [this](u8 value, u8, u16, u8) -> bool {
+                std::cout<< "Inside write OCRC hook" << std::endl;
+                this->nextOcrC = (this->highByteTemp << 8) | value;
+                if (this->ocrUpdateMode == OCRUpdateMode::Immediate) {
+                    this->ocrC = this->nextOcrC;
+                }
+                return true;
+            });
+    }    
+    
+    // 16-bit configuration
+    if (config->bits == 16) {
+        this->mainCPU->writeHookVector[config->ICR] = std::make_shared<std::function<bool(u8, u8, u16, u8)>>(
+            [this](u8 value, u8, u16, u8) -> bool {
+                this->icr = (this->highByteTemp << 8) | value;
+                return true;
+            });
+
+        auto updateTempRegister = std::make_shared<std::function<bool(u8, u8, u16, u8)>>(
+            [this](u8 value, u8, u16, u8) -> bool {
+                this->highByteTemp = value;
+                return true;
+            });
+
+        auto updateOCRHighRegister = std::make_shared<std::function<bool(u8, u8, u16, u8)>>(
+            [this](u8 value, u8, u16 address, u8) -> bool {
+                this->highByteTemp = value & (this->getOCRMask() >> 8);
+                this->mainCPU->data[address] = this->highByteTemp;
+                return true;
+            });
+
+        this->mainCPU->writeHookVector[config->TCNT + 1] = updateTempRegister;
+        this->mainCPU->writeHookVector[config->OCRA + 1] = updateOCRHighRegister;
+        this->mainCPU->writeHookVector[config->OCRB + 1] = updateOCRHighRegister;
+        if (hasOCRC) {
+            this->mainCPU->writeHookVector[config->OCRC + 1] = updateOCRHighRegister;
+        }
+        this->mainCPU->writeHookVector[config->ICR + 1] = updateTempRegister;
+    }
+
+    this->mainCPU->writeHookVector[config->TCCRA] = std::make_shared<std::function<bool(u8, u8, u16, u8)>>(
+        [this, config](u8 value, u8, u16, u8) -> bool {
+            std::cout<< "Inside write TCCRA hook" << std::endl;
+            this->mainCPU->data[config->TCCRA] = value;
+            this->updateWGMConfig();
+            return true;
+    });
+
+    this->mainCPU->writeHookVector[config->TCCRB] = std::make_shared<std::function<bool(u8, u8, u16, u8)>>(
+        [this, config](u8 value, u8, u16, u8) -> bool {
+            std::cout<< "Inside write TCCRB hook" << std::endl;
+            if (!config->TCCRC) {
+                this->checkForceCompare(value);
+                value &= ~(FOCA | FOCB);
+            }
+            this->mainCPU->data[config->TCCRB] = value;
+            this->updateDivider = true;
+            this->mainCPU->clearClockEvent(std::make_shared<std::function<void(void)>>([this]() { this->count(); }));
+            this->mainCPU->addClockEvent(std::make_shared<std::function<void(void)>>([this]() { this->count(); }), 0);
+            this->updateWGMConfig();
+            return true;
+        });
+
+    if (config->TCCRC) {
+        this->mainCPU->writeHookVector[config->TCCRC] = std::make_shared<std::function<bool(u8, u8, u16, u8)>>(
+            [this](u8 value, u8, u16, u8) -> bool {
+                std::cout<< "Inside write TCCRC hook" << std::endl;
+                this->checkForceCompare(value);
+                return true;
+            });
+    }
+
+    this->mainCPU->writeHookVector[config->TIFR] = std::make_shared<std::function<bool(u8, u8, u16, u8)>>(
+        [this, config](u8 value, u8, u16, u8) -> bool {
+            std::cout<< "Inside write TIFR hook" << std::endl;
+            this->mainCPU->data[config->TIFR] = value;
+            this->mainCPU->clearInterruptByFlag(this->defaultOVFInterrupt, value);
+            this->mainCPU->clearInterruptByFlag(this->defaultOCFAInterrupt, value);
+            this->mainCPU->clearInterruptByFlag(this->defaultOCFBInterrupt, value);
+            return true;
+        });
+
+    this->mainCPU->writeHookVector[config->TIMSK] = std::make_shared<std::function<bool(u8, u8, u16, u8)>>(
+        [this](u8 value, u8, u16, u8) -> bool {
+            std::cout<< "Inside write TIMSK hook" << std::endl;
+            this->mainCPU->updateInterruptsEnabled(this->defaultOVFInterrupt, value);
+            this->mainCPU->updateInterruptsEnabled(this->defaultOCFAInterrupt, value);
+            this->mainCPU->updateInterruptsEnabled(this->defaultOCFBInterrupt, value);
+            return true;
+        });
 }
 
 void AVRTimer::reset(){
@@ -84,16 +225,125 @@ u16 AVRTimer::getDebugTCNT() {
 }
 
 /* Tested: ✅ */
+void AVRTimer::count(bool reschedule, bool external) {
+
+   const u32 delta = this->mainCPU->cycles - this->lastCycle;
+   
+    if ((this->divider && delta >= this->divider) || external) {
+
+        const u16 counterDelta = external ? 1 : delta / this->divider; 
+
+        this->lastCycle += counterDelta * this->divider;
+        const u16 val = this->tcnt;
+
+        const TimerMode timerMode = this->timerMode;
+        const u16 TOP = this->getTOP(); // Using this const wherever the const in ts is used
+        std::cout << "TOP: " << getTOP() << std::endl;
+
+        const bool phasePwm = (timerMode == TimerMode::PWMPhaseCorrect || timerMode == TimerMode::PWMPhaseFrequencyCorrect);
+
+        const u16 newVal = phasePwm
+            ? this->phasePwmCount(val, counterDelta)
+            : (val + counterDelta) % (TOP + 1);
+            
+        const bool overflow = (val + counterDelta > TOP);
+
+        // Handle TCNT updates - A CPU write has priority over all counter clear or count operations.
+        if (!this->tcntUpdated) {
+            this->tcnt = newVal;
+            if (!phasePwm) {
+                this->timerUpdated(newVal, val);
+            }
+        }
+
+        // Handle FastPWM and overflow scenarios
+        if (!phasePwm) {
+            if (timerMode == TimerMode::FastPWM && overflow) {
+                std::cout << "FastPWM and overflow" << std::endl;
+                if (this->compA) {
+                    this->updateCompPin(this->compA, 'A', true);
+                }
+                if (this->compB) {
+                    this->updateCompPin(this->compB, 'B', true);
+                }
+            }
+
+            if (this->ocrUpdateMode == OCRUpdateMode::Bottom && overflow) {
+                // OCRUpdateMode.Top only occurs in Phase Correct modes, handled by phasePwmCount()
+                this->ocrA = this->nextOcrA;
+                this->ocrB = this->nextOcrB;
+                this->ocrC = this->nextOcrC;
+            }
+            // OCRUpdateMode.Bottom only occurs in Phase Correct modes, handled by phasePwmCount().
+            // Thus we only handle TOVUpdateMode.Top or TOVUpdateMode.Max here.
+            if (overflow && (this->tovUpdateMode == TOVUpdateMode::Top || TOP == this->MAX)) {
+                this->mainCPU->setInterruptFlag(this->defaultOVFInterrupt);
+            }
+        }
+    }
+
+    // Handle manual TCNT updates
+    if (this->tcntUpdated) {
+        std::cout << "tcnt manually updated" << std::endl;
+        this->tcnt = this->tcntNext;
+        this->tcntUpdated = false;
+        if ((this->tcnt == 0 && this->ocrUpdateMode == OCRUpdateMode::Bottom) ||
+            (this->tcnt == this->getTOP() && this->ocrUpdateMode == OCRUpdateMode::Top)) { // Using getTOP here because the const is limited to the first if in TS...yep, this is true
+            this->ocrA = this->nextOcrA;
+            this->ocrB = this->nextOcrB;
+            this->ocrC = this->nextOcrC;
+        }
+    }
+    // Update the divider if needed
+    if (this->updateDivider) {
+        const u8 CS = this->getCS();
+        const u8 externalClockPin = this->mainConfig->externalClockPin;
+        const int newDivider = this->mainConfig->dividers[CS];
+        this->lastCycle = newDivider ? this->mainCPU->cycles : 0;
+        this->updateDivider = false;
+        this->divider = newDivider;
+
+        if (this->mainConfig->externalClockPort && !this->externalClockPort) {
+            this->externalClockPort = this->mainCPU->GPIOByPort[this->mainConfig->externalClockPort];
+        }
+        if (this->externalClockPort) {
+            this->externalClockPort->externalClockListeners[externalClockPin] = nullptr;
+        }
+        if (newDivider) {
+            this->mainCPU->addClockEvent(std::make_shared<std::function<void(void)>>([this]() { this->count(); }), this->lastCycle + newDivider - this->mainCPU->cycles);
+        } else if (this->externalClockPort &&
+                   (CS == (u8)ExternalClockMode::FallingEdge || CS == (u8)ExternalClockMode::RisingEdge)) {
+            // Assigning the callback to the pin
+            this->externalClockPort->externalClockListeners[externalClockPin] = std::make_shared<std::function<void(bool)>>([this](bool value) { this->externalClockCallback(value); });
+            this->externalClockRisingEdge = (CS == (u8)ExternalClockMode::RisingEdge);
+        }
+        return;
+    }
+    // Reschedule the clock event
+    if (reschedule && this->divider) {
+        this->mainCPU->addClockEvent(std::make_shared<std::function<void(void)>>([this]() { this->count(); }), this->lastCycle + this->divider - this->mainCPU->cycles);
+    }
+}
+
+/* Tested: ✅ */
+void AVRTimer::externalClockCallback(bool value) {
+    if (value == this->externalClockRisingEdge) {
+        this->count(false, true);
+    }
+}
+
+/* Tested: ✅ */
 void AVRTimer::updateWGMConfig() {
+
+    std::cout << "Inside updateWGMConfig()" << std::endl;
 
     // Extracting helpful information about the current mode and TCCRA
     const AVRTimerConfig *config = this->mainConfig;
     const auto &wgmModes = (config->bits == 16) ? wgmModes16Bit : wgmModes8Bit;
-    std::cout << "Is the config 8 bits? It should be... " << (wgmModes == wgmModes8Bit) << std::endl;
     const u8 TCCRA = this->mainCPU->data[config->TCCRA];
-    std::cout << "Data at TCCRA should be 255 " << int(TCCRA) << std::endl;
+    // std::cout << "Data at TCCRA should be 255 " << int(TCCRA) << std::endl;
     const WGMConfig &wgmConfig = wgmModes[this->getWGM()];
-    std::cout << "getWGM for testing should be 3: " << int(this->getWGM()) << "And wgmModes should have top value of 255 and OCRUpdateMode 2: " << int(wgmConfig.topValue) << " and " << int(wgmConfig.ocrUpdate) <<  std::endl;
+    // std::cout << "getWGM for testing should be 3: " << int(this->getWGM()) << "And wgmModes should have top value of 255 and OCRUpdateMode 2: " << int(wgmConfig.topValue) << " and " << int(wgmConfig.ocrUpdate) <<  std::endl;
 
     this->timerMode = wgmConfig.mode;
     this->topValue = wgmConfig.topValue;
@@ -105,7 +355,7 @@ void AVRTimer::updateWGMConfig() {
                 this->timerMode == TimerMode::PWMPhaseCorrect ||
                 this->timerMode == TimerMode::PWMPhaseFrequencyCorrect);
 
-    std::cout << "mode should be true: " << pwmMode << std::endl;
+    // std::cout << "mode should be true: " << pwmMode << std::endl;
 
     // Update compA
     u8 prevCompA = this->compA;
@@ -268,113 +518,6 @@ void AVRTimer::timerUpdated(u16 value, u16 prevValue) {
     }
 }
 
-int main(){
-
-    /* testing phasePWMCount() ✅ */
-    // std::vector<u16> testPM(1024);
-    // CPU *cpu = new CPU(testPM);
-    // portDConfig *PD = new portDConfig;
-    // AVRIOPort *testIO = new AVRIOPort(cpu, PD);
-    // timer0Config *tzero = new timer0Config;
-    // AVRTimer *timer = new AVRTimer(cpu, tzero);
-    // Value and TOP are 0
-    // std::cout << "TOP value is: " << int(timer->getTOP()) << std::endl;
-    // N/A, TOP is always 255 in our case
-    // delta = 10, countingUp true, value == TOP - 5, and tcntUpdated is false
-    // timer->countingUp = true;
-    // timer->tcntUpdated = false;
-    // timer->ocrA = 250;
-    // timer->ocrB = 250;
-    // timer->compA = CompBitsValue(1);
-    // timer->compB = CompBitsValue(1);
-    // timer->ocrUpdateMode = OCRUpdateMode::Top;
-    // int result = timer->phasePwmCount((timer->getTOP() - 5), 10);
-    // std::cout << "The result is: " << result << std::endl;
-    // delta = 10, countingUp false, value == 5, and tcntUpdated is false
-    // timer->countingUp = false;
-    // timer->tcntUpdated = false;
-    // timer->ocrA = 45;
-    // timer->ocrB = 45;
-    // timer->compA = CompBitsValue(1);
-    // timer->compB = CompBitsValue(1);
-    // timer->ocrUpdateMode = OCRUpdateMode::Bottom;
-    // int result = timer->phasePwmCount(5, 10);
-    // std::cout << "The result is: " << result << std::endl;
-
-    /* testing timerUpdated() ✅ */
-    // std::vector<u16> testPM(1024);
-    // CPU *cpu = new CPU(testPM);
-    // portDConfig *PD = new portDConfig;
-    // AVRIOPort *testIO = new AVRIOPort(cpu, PD);
-    // timer0Config *tzero = new timer0Config;
-    // AVRTimer *timer = new AVRTimer(cpu, tzero);
-    // // Set OCR a and OCR B
-    // timer->ocrA = 20;
-    // timer->ocrB = 20;
-    // timer->compA = CompBitsValue(1);
-    // timer->compB = CompBitsValue(1);
-    // timer->timerUpdated(21,19);
-
-    /* testing check checkForceCompare() ✅ */
-    // std::vector<u16> testPM(1024);
-    // CPU *cpu = new CPU(testPM);
-    // portDConfig *PD = new portDConfig;
-    // AVRIOPort *testIO = new AVRIOPort(cpu, PD);
-    // timer0Config *tzero = new timer0Config;
-    // AVRTimer *timer = new AVRTimer(cpu, tzero);
-    // timer->timerMode = TimerMode::Normal;
-    // u8 testVal = 0b00000000;
-    // timer->checkForceCompare(testVal);
-
-    /* Testing updateWGMConfig() ✅ */
-    // std::vector<u16> testPM(1024);
-    // CPU *cpu = new CPU(testPM);
-    // portDConfig *PD = new portDConfig;
-    // AVRIOPort *testIO = new AVRIOPort(cpu, PD);
-    // timer0Config *tzero = new timer0Config;
-    // AVRTimer *timer = new AVRTimer(cpu, tzero);
-    // // Setting dummy value for TCCRA
-    // cpu->data[timer->mainConfig->TCCRA] = 0b11111101;
-    // // Confirm that the values initial values are correct...
-    // timer->updateWGMConfig();
-
-    /* Testing updateCompPin() ✅ */
-    // std::vector<u16> testPM(1024);
-    // CPU *cpu = new CPU(testPM);
-    // portDConfig *PD = new portDConfig;
-    // AVRIOPort *testIO = new AVRIOPort(cpu, PD);
-    // timer0Config *tzero = new timer0Config;
-    // AVRTimer *timer = new AVRTimer(cpu, tzero);
-    // // Try different timer modes
-    // timer->timerMode = TimerMode::Reserved;
-    // timer->updateCompPin(CompBitsValue::One, 'B', true);
-
-    /* Testing updateCompB() and C() ✅ */
-    // std::vector<u16> testPM(1024);
-    // CPU *cpu = new CPU(testPM);
-    // portDConfig *PD = new portDConfig;
-    // AVRIOPort *testIO = new AVRIOPort(cpu, PD);
-    // timer0Config *tzero = new timer0Config;
-    // AVRTimer *timer = new AVRTimer(cpu, tzero);
-    // cpu->data[testIO->mainPortConfig->DDR] = 0b11111111;
-    // cpu->data[testIO->mainPortConfig->PORT] = 0b11111111;
-    // timer->updateCompB(PinOverrideMode::None);
-    // timer->updateCompC(PinOverrideMode::None);
-
-    /* Testing updateCompA() ✅ */
-    // std::vector<u16> testPM(1024);
-    // CPU *cpu = new CPU(testPM);
-    // portDConfig *PD = new portDConfig;
-    // AVRIOPort *testIO = new AVRIOPort(cpu, PD);
-    // timer0Config *tzero = new timer0Config;
-    // AVRTimer *timer = new AVRTimer(cpu, tzero);
-    // cpu->data[testIO->mainPortConfig->DDR] = 0b11111111;
-    // cpu->data[testIO->mainPortConfig->PORT] = 0b11111111;
-    // // Start by just printing out the values...
-    // timer->updateCompA(PinOverrideMode::Enable);
-
-}
-
 /* Tested: ✅ */
 void AVRTimer::checkForceCompare(u8 value) {
     // Return if the timer is in a PWM mode
@@ -512,3 +655,144 @@ void AVRTimer::updateCompC(PinOverrideMode value) {
     }
 }
 
+// int main(){
+    /* testing constructor ✅ */
+    // std::vector<u16> testPM(1024);
+    // CPU *cpu = new CPU(testPM);
+    // portDConfig *PD = new portDConfig;
+    // AVRIOPort *testIO = new AVRIOPort(cpu, PD);
+    // timer0Config *tzero = new timer0Config;
+    // AVRTimer *timer = new AVRTimer(cpu, tzero);
+    // cpu->readData(tzero->TCNT);
+    // cpu->writeData(tzero->TCNT, 69);
+    // cpu->writeData(tzero->OCRA, 69);
+    // cpu->writeData(tzero->OCRB, 69);
+    // cpu->writeData(tzero->OCRC, 69);
+    // cpu->writeData(tzero->TCCRA, 69);
+    // cpu->writeData(tzero->TCCRB, 69);
+    // cpu->writeData(tzero->TCCRC, 69);
+    // cpu->writeData(tzero->TIFR, 69);
+    // cpu->writeData(tzero->TIMSK, 69);
+
+    /* testing count() and externalClockCallback() ✅ */
+    // std::vector<u16> testPM(1024);
+    // CPU *cpu = new CPU(testPM);
+    // portDConfig *PD = new portDConfig;
+    // AVRIOPort *testIO = new AVRIOPort(cpu, PD);
+    // timer0Config *tzero = new timer0Config;
+    // AVRTimer *timer = new AVRTimer(cpu, tzero);
+    // timer->externalClockRisingEdge = false;
+    // timer->externalClockCallback(false);
+    // cpu->cycles = 30;
+    // timer->lastCycle = 10;
+    // timer->divider = tzero->dividers[2];
+    // timer->tcnt = 255;
+    // timer->timerMode = TimerMode::FastPWM;
+    // timer->compA = CompBitsValue(1);
+    // timer->compB = CompBitsValue(1);
+    // timer->count();
+
+
+    /* testing phasePWMCount() ✅ */
+    // std::vector<u16> testPM(1024);
+    // CPU *cpu = new CPU(testPM);
+    // portDConfig *PD = new portDConfig;
+    // AVRIOPort *testIO = new AVRIOPort(cpu, PD);
+    // timer0Config *tzero = new timer0Config;
+    // AVRTimer *timer = new AVRTimer(cpu, tzero);
+    // Value and TOP are 0
+    // std::cout << "TOP value is: " << int(timer->getTOP()) << std::endl;
+    // N/A, TOP is always 255 in our case
+    // delta = 10, countingUp true, value == TOP - 5, and tcntUpdated is false
+    // timer->countingUp = true;
+    // timer->tcntUpdated = false;
+    // timer->ocrA = 250;
+    // timer->ocrB = 250;
+    // timer->compA = CompBitsValue(1);
+    // timer->compB = CompBitsValue(1);
+    // timer->ocrUpdateMode = OCRUpdateMode::Top;
+    // int result = timer->phasePwmCount((timer->getTOP() - 5), 10);
+    // std::cout << "The result is: " << result << std::endl;
+    // delta = 10, countingUp false, value == 5, and tcntUpdated is false
+    // timer->countingUp = false;
+    // timer->tcntUpdated = false;
+    // timer->ocrA = 45;
+    // timer->ocrB = 45;
+    // timer->compA = CompBitsValue(1);
+    // timer->compB = CompBitsValue(1);
+    // timer->ocrUpdateMode = OCRUpdateMode::Bottom;
+    // int result = timer->phasePwmCount(5, 10);
+    // std::cout << "The result is: " << result << std::endl;
+
+    /* testing timerUpdated() ✅ */
+    // std::vector<u16> testPM(1024);
+    // CPU *cpu = new CPU(testPM);
+    // portDConfig *PD = new portDConfig;
+    // AVRIOPort *testIO = new AVRIOPort(cpu, PD);
+    // timer0Config *tzero = new timer0Config;
+    // AVRTimer *timer = new AVRTimer(cpu, tzero);
+    // // Set OCR a and OCR B
+    // timer->ocrA = 20;
+    // timer->ocrB = 20;
+    // timer->compA = CompBitsValue(1);
+    // timer->compB = CompBitsValue(1);
+    // timer->timerUpdated(21,19);
+
+    /* testing check checkForceCompare() ✅ */
+    // std::vector<u16> testPM(1024);
+    // CPU *cpu = new CPU(testPM);
+    // portDConfig *PD = new portDConfig;
+    // AVRIOPort *testIO = new AVRIOPort(cpu, PD);
+    // timer0Config *tzero = new timer0Config;
+    // AVRTimer *timer = new AVRTimer(cpu, tzero);
+    // timer->timerMode = TimerMode::Normal;
+    // u8 testVal = 0b00000000;
+    // timer->checkForceCompare(testVal);
+
+    /* Testing updateWGMConfig() ✅ */
+    // std::vector<u16> testPM(1024);
+    // CPU *cpu = new CPU(testPM);
+    // portDConfig *PD = new portDConfig;
+    // AVRIOPort *testIO = new AVRIOPort(cpu, PD);
+    // timer0Config *tzero = new timer0Config;
+    // AVRTimer *timer = new AVRTimer(cpu, tzero);
+    // // Setting dummy value for TCCRA
+    // cpu->data[timer->mainConfig->TCCRA] = 0b11111101;
+    // // Confirm that the values initial values are correct...
+    // timer->updateWGMConfig();
+
+    /* Testing updateCompPin() ✅ */
+    // std::vector<u16> testPM(1024);
+    // CPU *cpu = new CPU(testPM);
+    // portDConfig *PD = new portDConfig;
+    // AVRIOPort *testIO = new AVRIOPort(cpu, PD);
+    // timer0Config *tzero = new timer0Config;
+    // AVRTimer *timer = new AVRTimer(cpu, tzero);
+    // // Try different timer modes
+    // timer->timerMode = TimerMode::Reserved;
+    // timer->updateCompPin(CompBitsValue::One, 'B', true);
+
+    /* Testing updateCompB() and C() ✅ */
+    // std::vector<u16> testPM(1024);
+    // CPU *cpu = new CPU(testPM);
+    // portDConfig *PD = new portDConfig;
+    // AVRIOPort *testIO = new AVRIOPort(cpu, PD);
+    // timer0Config *tzero = new timer0Config;
+    // AVRTimer *timer = new AVRTimer(cpu, tzero);
+    // cpu->data[testIO->mainPortConfig->DDR] = 0b11111111;
+    // cpu->data[testIO->mainPortConfig->PORT] = 0b11111111;
+    // timer->updateCompB(PinOverrideMode::None);
+    // timer->updateCompC(PinOverrideMode::None);
+
+    /* Testing updateCompA() ✅ */
+    // std::vector<u16> testPM(1024);
+    // CPU *cpu = new CPU(testPM);
+    // portDConfig *PD = new portDConfig;
+    // AVRIOPort *testIO = new AVRIOPort(cpu, PD);
+    // timer0Config *tzero = new timer0Config;
+    // AVRTimer *timer = new AVRTimer(cpu, tzero);
+    // cpu->data[testIO->mainPortConfig->DDR] = 0b11111111;
+    // cpu->data[testIO->mainPortConfig->PORT] = 0b11111111;
+    // // Start by just printing out the values...
+    // timer->updateCompA(PinOverrideMode::Enable);
+// }

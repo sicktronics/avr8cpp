@@ -126,7 +126,7 @@ struct PCINT2 : AVRPinChangeInterrupt {
 typedef void (*GPIOListener) (u8 value, u8 oldValue);
 
 /* External clock listener "function type" */
-typedef void (*externalClockListener) (bool pinValue);
+// typedef void (*externalClockListener) (bool pinValue);
 
 
 // configuring Port A
@@ -315,7 +315,8 @@ class AVRIOPort{
     AVRPortConfig *mainPortConfig;
 
     /* Vectors of our listeners for clock and GPIO */
-    std::vector<externalClockListener> externalClockListeners;
+    // std::vector<externalClockListener> externalClockListeners;
+    std::vector<std::shared_ptr<std::function<void(bool)>>> externalClockListeners;
     std::vector<GPIOListener> listeners;
 
     /* Vector of external interrupts */

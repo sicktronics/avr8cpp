@@ -7,8 +7,9 @@ CPU::CPU(std::vector<u16> progMem, int SRAMSize){
 
     this->SRAM_BYTES = SRAMSize;
 
-    // Set up the writeHookVector with the correct size and fill with nullptr
+    // Set up the writeHookVector and readHookFunctions with the correct size and fill with nullptr
     this->writeHookVector = std::vector<std::shared_ptr<std::function<bool(u8, u8, u16, u8)>>>(8448, nullptr);
+    this->readHookFunctions = std::vector<readHookFunction>(8448, nullptr);
 
     // Next, to fill the vector with null?
 
@@ -133,11 +134,11 @@ u8 CPU::readData(u16 address){
 
     // If we are past the general purpose I/O registers (we don't care about those) AND the hook at that address exists
     if(address >= 32 && hookPtr){
-        // std::cout << "a readhook exists at location " << address << std::endl;
-        return this->readHookFunctions[address](address);
+        std::cout << "a readhook exists at location " << address << std::endl;
+        return (*this->readHookFunctions[address])(address);
     }
     // Manually return the data
-    // std::cout << "no readhook, will manually return" << std::endl;
+    std::cout << "no readhook, will manually return" << std::endl;
     return this->data[address];
 }
 
@@ -425,7 +426,7 @@ void CPU::tick() {
     if (nextClk && nextClk->cyclesForEvent <= this->cycles){
         // std::cout << "made it here"<< std::endl;
         // call the callback function on nextClockEvent (should return void)
-        nextClk->callbackFunc();
+        (*nextClk->callbackFunc)();
         // std::cout << "called it back"<< std::endl;
         // this.nextClockEvent = nextClockEvent.next
         this->nextClockEvent = nextClk->next;

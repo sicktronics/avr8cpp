@@ -39,6 +39,7 @@ class CPU;
  May need to add functionality for typedefs that return void, but this should work. If the specific writeHook function writes data, returns true, if not, returns false
 */
 // typedef bool (*writeHookFunction) (u8 value, u8 oldValue, u16 address, u8 mask);
+typedef std::shared_ptr<std::function<bool(u8, u8, u16, u8)>> writeHookFunction;
 
 
 
@@ -46,7 +47,8 @@ class CPU;
 /*
   An array of function pointers - each will handle different functionality around reading data from a certain location. We will define different functions for different parts of the microcontroller - e.g., different read Hook functions for different timer configs.
 */
-typedef u8 (*readHookFunction) (u16 address);
+// typedef u8 (*readHookFunction) (u16 address);
+typedef std::shared_ptr<std::function<u8(u16)>> readHookFunction;
 
 /*
  A struct for configuring AVR interrupts
@@ -69,7 +71,8 @@ struct AVRInterruptConfig {
 /*
 A type of function that acts as a "callback" function for clock events
 */
-typedef void (*AVRClockEventCallback) ();
+// typedef void (*AVRClockEventCallback) ();
+typedef std::shared_ptr<std::function<void(void)>> AVRClockEventCallback;
 
 /*
 A struct representing a clock event entry
@@ -139,9 +142,9 @@ class CPU {
   */
   // writeHookFunction writeHookFunctions[8192 + REGISTER_SPACE];
   // XXX Transitioning to a writeHookVector
-  std::vector<std::shared_ptr<std::function<bool(u8, u8, u16, u8)>>> writeHookVector;
+  std::vector<writeHookFunction> writeHookVector;
 
-  readHookFunction readHookFunctions [8192 + REGISTER_SPACE];
+  std::vector<readHookFunction> readHookFunctions;
 
   /*
   Function for writing data

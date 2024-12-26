@@ -7,8 +7,8 @@ AVRIOPort::AVRIOPort(CPU *cpu, AVRPortConfig *portConfig){
     // The CPU that gets passed in will be the "main cpu" referenced in our functions
     this->mainCPU = cpu;
     this->mainPortConfig = portConfig;
-    // Ininitialize vectors
-    this->externalClockListeners.resize(8);
+    // Set up the externalClockListeners with the correct size and fill with nullptr
+    this->externalClockListeners = std::vector<std::shared_ptr<std::function<void(bool)>>>(8, nullptr);
     this->listeners.clear();
 
     // Add this to gpioPorts
@@ -321,7 +321,7 @@ void AVRIOPort::updatePinRegister(u8 ddr){
                 // Notify the external clock listener if it exists
                 if (this->externalClockListeners[index]) {
                     std::cout << "Checking the clock listener" << std::endl;
-                    this->externalClockListeners[index](value);
+                    (*this->externalClockListeners[index])(value);
                 }
             }
         }
@@ -530,8 +530,18 @@ void AVRIOPort::writeGPIO(u8 value, u8 ddr){
 //     std::cout << "callin dat test func 3" << std::endl;
 // }
 
-// int main(){
+// void fakeClkList(bool pinValue){
+// std::cout << "Inside the listener! pinValue: " << pinValue << std::endl;
+// }
 
+// XXX New fakeClkList
+// auto fakeClkList = std::make_shared<std::function<void(bool)>>(
+//     [](bool pinValue) {
+//         std::cout << "Hi we are inside fake clk " << std::endl;
+//         // return true;
+//     });
+
+// int main(){
 
     /* testing constructor ✅*/
     // std::vector<u16> testPM(1024);
@@ -589,17 +599,15 @@ void AVRIOPort::writeGPIO(u8 value, u8 ddr){
 
 
     /* testing updatePinRegister() ✅ */
-    // void fakeClkList(bool pinValue){
-    // std::cout << "Inside the listener! pinValue: " << pinValue << std::endl;
-    // }
+
     // std::vector<u16> testPM(1024);
     // CPU *cpu = new CPU(testPM);
     // portDConfig *PD = new portDConfig;
     // AVRIOPort *testIO = new AVRIOPort(cpu, PD);
     // testIO->pinValue = 0b11111111;
     // testIO->lastValue = 0b11110000;
-    // testIO->externalClockListeners[4] = *fakeClkList;
-    // std::cout << testIO->externalClockListeners.size() << std::endl;
+    // testIO->externalClockListeners[4] = fakeClkList;
+    // std::cout << "Size of ext clk listeners: " << testIO->externalClockListeners.size() << std::endl;
     // testIO->updatePinRegister(0b10101010);
     // std::cout << "Register should be updated with new pin: " << int(testIO->mainCPU->data[testIO->mainPortConfig->PIN]) << std::endl;   
 

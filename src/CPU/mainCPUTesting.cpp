@@ -11,15 +11,6 @@ using namespace std;
 //     return true;
 // }
 
-// Test read hook
-// u8 rHFTest(u16 address){
-//     return cpu->data[address];
-// }
-
-/*
-For testing clock stuff
-*/
-
 // XXX New test writeHook
 // auto wHFTest = std::make_shared<std::function<bool(u8, u8, u16, u8)>>(
 //     [](u8 value, u8 oldValue, u16 address, u8 mask) {
@@ -27,17 +18,51 @@ For testing clock stuff
 //         return true;
 //     });
 
+// Test read hook
+// u8 rHFTest(u16 address){
+//     return cpu->data[address];
+// }
+
+
+
+/*
+For testing clock stuff
+*/
 
 // // set up a test cpu const cpu = new CPU(new Uint16Array(1024), 8192);
-// std::vector<u16> testPM(1024);
-
-// CPU *cpu = new CPU(testPM);
 
 // // Set up a type of array, ITestEvent, with two numbers: expected cycles vs actual cycles
 // // set up an array of ITestEvents (const events: ITestEvent[] = [];)
 // std::vector<int> events;
 
+
+
 // // Define three different callback functions
+
+// XXX New callbacks
+// auto callback1 = std::make_shared<std::function<void(void)>>(
+//     []() {
+//         std::cout << "callback 1 exectuing!!" << std::endl;
+//         events.push_back(1);
+//         events.push_back(cpu->cycles);
+//         std::cout << "Num cycles taken: " << int(cpu->cycles) << std::endl;
+//     });
+
+// auto callback4 = std::make_shared<std::function<void(void)>>(
+//     []() {
+//         std::cout << "callback 4 exectuing!!" << std::endl;
+//         events.push_back(4);
+//         events.push_back(cpu->cycles);
+//         std::cout << "Num cycles taken: " << int(cpu->cycles) << std::endl;
+//     });
+// auto callback10 = std::make_shared<std::function<void(void)>>(
+//     []() {
+//         std::cout << "callback 10 exectuing!!" << std::endl;
+//         events.push_back(10);
+//         events.push_back(cpu->cycles);
+//         std::cout << "Num cycles taken: " << int(cpu->cycles) << std::endl;
+//     });
+
 // void callback1(){
 //     std::cout << "callback 1 exectuing!!" << std::endl;
 //     events.push_back(1);
@@ -144,21 +169,21 @@ For testing clock stuff
     // callbackArr[10] = cpu->addClockEvent(c10, 10);
 
     // // update the callbacks at a few locations with updated cycle counts
-    // // cpu.updateClockEvent(callbacks[4], 2); - new cycle number = 2
-    // // cpu.updateClockEvent(callbacks[1], 12);
+    // cpu.updateClockEvent(callbacks[4], 2); - new cycle number = 2
+    // cpu.updateClockEvent(callbacks[1], 12);
     // cpu->updateClockEvent(callbackArr[4], 2);
     // cpu->updateClockEvent(callbackArr[1], 12);
 
-    //  // loop 14 times:
-    //     // increment cpu cycles
-    //     // call tick
+     // loop 14 times:
+        // increment cpu cycles
+        // call tick
     // for (int i = 0; i < 14; i++) {
     //     cpu->cycles++;
     //     cpu->tick();
-    //     // cout << "tick'd"<< endl;
+    //     cout << "tick'd"<< endl;
     // }
 
-    // // check the events array, should = [4, 2], [10, 10], [1, 12],
+    // check the events array, should = [4, 2], [10, 10], [1, 12],
     // for(int i = 0; i < events.size(); i++) {
     //         std::cout << events[i] << " ";
     // }
@@ -172,7 +197,7 @@ For testing clock stuff
     // AVRClockEventCallback c4 = callback4;
     // AVRClockEventCallback c10 = callback10;
 
-    // cout << "created the three callbacks"<< endl;
+    // std::cout << "created the three callbacks"<< endl;
 
     // // addClockEvent where callback is defined as pushing i, cpu cycle pairs onto the events array, 
     // // pass in i as cycles param
@@ -328,6 +353,10 @@ For testing clock stuff
     // cpu->writeData(32, 19);
     // cout << "test: " << int(cpu->data[32]) << endl;
 
+    std::vector<u16> testPM(1024);
+
+    CPU *cpu = new CPU(testPM);
+
     // XXX Redo TEST 1: Manual write to data[] ✅
     // want to store number "19" at data location 0
     // cpu->writeData(32, 19);
@@ -351,8 +380,15 @@ For testing clock stuff
     // cpu->writeData(32, 17);
     // cout << "data at location 32: " << int(cpu->data[32]) << endl;
 
+    // XXX New test readHook
+    // auto rHFTest = std::make_shared<std::function<u8(u16)>>(
+    //     [cpu](u16 address) {
+    //         std::cout << "Read hookin'!! " << std::endl;
+    //         return cpu->data[address];
+    //     });
+
     // TEST 4: Define sample readHook and use it to write to data
-    // cpu->readHookFunctions[32] = *rHFTest;
+    // cpu->readHookFunctions[32] = rHFTest;
     // int result = cpu->readData(32);
     // cout << "data at location 32: " << result << endl;
 

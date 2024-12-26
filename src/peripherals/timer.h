@@ -441,6 +441,12 @@ struct OCFCInterrupt : public AVRInterruptConfig {
   /* For updating the Waveform Generation Mode (WGM) */
   void updateWGMConfig();
 
+  /* For counting! */
+  void count(bool reschedule = true, bool external = false);
+
+  /* For managing external clock callbacks */
+  void externalClockCallback(bool value);
+
   /* For incrementing/decrementing the value and checking for trigger points */
   u16 phasePwmCount(u16 value, u8 delta);
 
