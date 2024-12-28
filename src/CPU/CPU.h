@@ -16,7 +16,8 @@ typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned long u32;
 typedef unsigned long long u64;
-typedef short i16;
+typedef int16_t i16;
+typedef int8_t i8;
 
 /*
  A constant to represent the size of the register space (registerSpace) 
@@ -136,6 +137,8 @@ class CPU {
   */
   u16 getUint16LittleEndian(int byteOffset);
   void setUint16LittleEndian(int byteOffset, u16 value);
+
+  void setInt16LittleEndian(u16 address, i16 value);
 
   /*
   Array of write hook and read hook function pointers - size is # of SRAM bytes + REGISTER_SPACE, same size as data array (?)

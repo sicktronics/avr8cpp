@@ -103,6 +103,11 @@ void CPU::setUint16LittleEndian(int byteOffset, u16 value){
 //    }
 }
 
+void CPU::setInt16LittleEndian(u16 address, i16 value) {
+    this->data[address] = value & 0xFF;         // Lower byte
+    this->data[address + 1] = (value >> 8) & 0xFF; // Upper byte
+}
+
 // typedef bool (*writeHookFunction) (u8 value, u8 oldValue, u16 address, u8 mask);
 void CPU::writeData(u16 address, u8 value, u8 mask){
 
