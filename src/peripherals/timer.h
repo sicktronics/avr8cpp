@@ -8,18 +8,10 @@
 extern portDConfig PDConfig;
 extern portBConfig PBConfig;
 
+
 /* Timer 01 dividers  - last two are for external clock */
 // int timer01Dividers[] = {0, 1, 8, 64, 256, 1024, 0, 0};
-std::unordered_map<int, int> timer01Dividers = {
-    {0, 0},
-    {1, 1},
-    {2, 8},
-    {3, 64},
-    {4, 256},
-    {5, 1024},
-    {6, 0}, // External clock - see ExternalClockMode
-    {7, 0}, // Ditto
-};
+extern std::unordered_map<int, int> timer01Dividers;
 
 /* External clock module */
 enum class ExternalClockMode {
@@ -30,7 +22,7 @@ enum class ExternalClockMode {
 /* Array for generic timer dividers */
 /***MIGHT need to switch to unordered_map ***/
 // int timerDividers[8];
-std::unordered_map<int, int> timerDividers;
+extern std::unordered_map<int, int> timerDividers;
 
 struct AVRTimerConfig {
     // Timer configuration
@@ -306,18 +298,7 @@ enum CompBitsValue : int {
 };
 
 // Function for translating compare bits into pin override modes
-PinOverrideMode compToOverride(CompBitsValue comp) {
-    switch (comp) {
-        case CompBitsValue::One:
-            return PinOverrideMode::Toggle;
-        case CompBitsValue::Two:
-            return PinOverrideMode::Clear;
-        case CompBitsValue::Three:
-            return PinOverrideMode::Set;
-        default:
-            return PinOverrideMode::Enable;
-    }
-}
+extern PinOverrideMode compToOverride(CompBitsValue comp);
 
 
 // Force Output Compare (FOC) bits
@@ -330,6 +311,8 @@ constexpr int FOCC = 1 << 5;
 /* The AVRTimer class! */
 class AVRTimer {
   public:
+
+  AVRClockEventCallback mainClockEvent;
 
   const u16 MAX; // Calculated based on the config's bit size (16-bit or 8-bit)
   u64 lastCycle = 0; // Track the last CPU cycle

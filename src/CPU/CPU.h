@@ -51,6 +51,9 @@ typedef std::shared_ptr<std::function<bool(u8, u8, u16, u8)>> writeHookFunction;
 // typedef u8 (*readHookFunction) (u16 address);
 typedef std::shared_ptr<std::function<u8(u16)>> readHookFunction;
 
+/* The size of our data array */
+ constexpr size_t data_array_size = 8192 + REGISTER_SPACE;
+
 /*
  A struct for configuring AVR interrupts
 */
@@ -66,14 +69,14 @@ struct AVRInterruptConfig {
     bool constant;
     // inverseFlag?: boolean;
     // These should technically be bool OR null...fix
-    bool inverseFlag;
+    bool inverseFlag = false;
 };
 
 /*
 A type of function that acts as a "callback" function for clock events
 */
 // typedef void (*AVRClockEventCallback) ();
-typedef std::shared_ptr<std::function<void(void)>> AVRClockEventCallback;
+typedef std::shared_ptr<std::function<void()>> AVRClockEventCallback;
 
 /*
 A struct representing a clock event entry
@@ -121,7 +124,9 @@ class CPU {
   /*
   Internal data, stored in 8-bit chunks - note fixed SRAM size
   */
-  u8 data[8192 + REGISTER_SPACE];
+
+ 
+  u8 data[data_array_size];
 
   /*
   Internal data, stored in 16-bit chunks

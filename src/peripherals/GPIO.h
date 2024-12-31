@@ -44,11 +44,11 @@ struct AVRPortConfig {
 
     // Register addresses
     // Port Input Pin
-    u8 PIN;
+    int PIN;
     // Data Direction Register
-    u8 DDR;
+    int DDR;
     // Data Register
-    u8 PORT;
+    int PORT;
     // Settings for interrupt
     // pin change interrupt
     AVRPinChangeInterrupt *pinChange;
@@ -123,7 +123,8 @@ struct PCINT2 : AVRPinChangeInterrupt {
 };
 
 /* GPIO Listener "function type" */
-typedef void (*GPIOListener) (u8 value, u8 oldValue);
+// typedef void (*GPIOListener) (u8 value, u8 oldValue);
+typedef std::shared_ptr<std::function<void(u8, u8)>> GPIOListener;
 
 /* External clock listener "function type" */
 // typedef void (*externalClockListener) (bool pinValue);
@@ -229,56 +230,56 @@ struct portGConfig : AVRPortConfig {
 /* Commenting the below out because they exceed the size of u8 (255) and I don't think we need em */
 
 // Configuring Port H
-// struct portHConfig : AVRPortConfig {
+struct portHConfig : AVRPortConfig {
 
-//     portHConfig() {
-//         this->PIN = 0x100;
-//         this->DDR = 0x101;
-//         this->PORT = 0x102;
+    portHConfig() {
+        this->PIN = 0x100;
+        this->DDR = 0x101;
+        this->PORT = 0x102;
 
-//         // No external interrupts
-//         this->externalInterrupts =  {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
-//     }
-// };
+        // No external interrupts
+        this->externalInterrupts =  {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+    }
+};
 
 // Configuring Port J
-// struct portJConfig : AVRPortConfig {
+struct portJConfig : AVRPortConfig {
 
-//     portJConfig() {
-//         this->PIN = 0x103;
-//         this->DDR = 0x104;
-//         this->PORT = 0x105;
+    portJConfig() {
+        this->PIN = 0x103;
+        this->DDR = 0x104;
+        this->PORT = 0x105;
 
-//         // No external interrupts
-//         this->externalInterrupts =  {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
-//     }
-// };
+        // No external interrupts
+        this->externalInterrupts =  {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+    }
+};
 
 // Configuring Port K
-// struct portKConfig : AVRPortConfig {
+struct portKConfig : AVRPortConfig {
 
-//     portKConfig() {
-//         this->PIN = 0x106;
-//         this->DDR = 0x107;
-//         this->PORT = 0x108;
+    portKConfig() {
+        this->PIN = 0x106;
+        this->DDR = 0x107;
+        this->PORT = 0x108;
 
-//         // No external interrupts
-//         this->externalInterrupts =  {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
-//     }
-// };
+        // No external interrupts
+        this->externalInterrupts =  {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+    }
+};
 
 // Configuring Port L
-// struct portLConfig : AVRPortConfig {
+struct portLConfig : AVRPortConfig {
 
-//     portLConfig() {
-//         this->PIN = 0x109;
-//         this->DDR = 0x10a;
-//         this->PORT = 0x10b;
+    portLConfig() {
+        this->PIN = 0x109;
+        this->DDR = 0x10a;
+        this->PORT = 0x10b;
 
-//         // No external interrupts
-//         this->externalInterrupts =  {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
-//     }
-// };
+        // No external interrupts
+        this->externalInterrupts =  {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+    }
+};
 
 enum class PinState {
     Low,

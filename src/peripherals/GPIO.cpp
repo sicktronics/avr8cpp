@@ -22,7 +22,7 @@ AVRIOPort::AVRIOPort(CPU *cpu, AVRPortConfig *portConfig){
     auto DDRWriteHook = std::make_shared<std::function<bool(u8, u8, u16, u8)>>(
             [cpu, portConfig, this](u8 value, u8 oldValue, u16 address, u8 mask) 
             {
-                std::cout << "Using DDR Write hook" << std::endl;
+                // std::cout << "Using DDR Write hook" << std::endl;
                 // Read current port value
                 u8 portValue = cpu->data[portConfig->PORT];
                 // Update the DDR value
@@ -43,8 +43,7 @@ AVRIOPort::AVRIOPort(CPU *cpu, AVRPortConfig *portConfig){
             u8 DDRMask = cpu->data[portConfig->DDR];
             // update port with new values
             cpu->data[portConfig->PORT] = value;
-
-            // ***UNCOMMENT LATER***
+            // std::cout << "THE PORT VALUE IS: " << int(portConfig->PORT) <<std::endl;
             this->writeGPIO(value, DDRMask);
             this->updatePinRegister(DDRMask);
             return true;
@@ -55,7 +54,7 @@ AVRIOPort::AVRIOPort(CPU *cpu, AVRPortConfig *portConfig){
     auto PINWriteHook = std::make_shared<std::function<bool(u8, u8, u16, u8)>>(
         [cpu, portConfig, this](u8 value, u8 oldValue, u16 address, u8 mask) 
         {
-            std::cout << "Using PIN Write hook" << std::endl;
+            // std::cout << "Using PIN Write hook" << std::endl;
             // Read current port value
             u8 oldPortValue = cpu->data[portConfig->PORT];
             // Reads current DDR value
@@ -164,7 +163,7 @@ AVRIOPort::AVRIOPort(CPU *cpu, AVRPortConfig *portConfig){
         auto PCIFRWriteHook = std::make_shared<std::function<bool(u8, u8, u16, u8)>>(
         [cpu, portConfig](u8 value, u8 oldValue, u16 address, u8 mask) 
         {       
-                std::cout << "Using PCIFR Write hook" << std::endl;    
+                // std::cout << "Using PCIFR Write hook" << std::endl;    
                 // Loop over GPIO ports and if one has a valid PCINT, clear the interrupt
                 for(int i = 0; i < cpu->GPIOPorts.size(); i++){
                     if(cpu->GPIOPorts[i]->PCINT){
@@ -179,7 +178,7 @@ AVRIOPort::AVRIOPort(CPU *cpu, AVRPortConfig *portConfig){
         [cpu, portConfig](u8 value, u8 oldValue, u16 address, u8 mask) 
         {
             // Update interrupts enabled for each port with a valid PCINT
-            std::cout << "Using PCMSK Write hook" << std::endl;
+            // std::cout << "Using PCMSK Write hook" << std::endl;
             for(int i = 0; i < cpu->GPIOPorts.size(); i++){
                 if(cpu->GPIOPorts[i]->PCINT){
                     cpu->updateInterruptsEnabled(cpu->GPIOPorts[i]->PCINT, value);
@@ -260,7 +259,7 @@ void AVRIOPort::timerOverridePin(u8 pin, PinOverrideMode mode){
         // Remove override for this pin
         this->overrideMask |= pinMask;
         this->overrideValue &= ~pinMask;
-        std::cout << "Mode none" << std::endl;
+        // std::cout << "Mode none" << std::endl;
     } else {
         // Apply override for this pin
         this->overrideMask &= ~pinMask;
@@ -269,22 +268,22 @@ void AVRIOPort::timerOverridePin(u8 pin, PinOverrideMode mode){
             case PinOverrideMode::Enable:
                 this->overrideValue &= ~pinMask;
                 this->overrideValue |= cpu->data[portConfig->PORT] & pinMask;
-                std::cout << "Mode enable" << std::endl;
+                // std::cout << "Mode enable" << std::endl;
                 break;
 
             case PinOverrideMode::Set:
                 this->overrideValue |= pinMask;
-                std::cout << "Mode set" << std::endl;
+                // std::cout << "Mode set" << std::endl;
                 break;
 
             case PinOverrideMode::Clear:
                 this->overrideValue &= ~pinMask;
-                std::cout << "Mode clear" << std::endl;
+                // std::cout << "Mode clear" << std::endl;
                 break;
 
             case PinOverrideMode::Toggle:
                 this->overrideValue ^= pinMask;
-                std::cout << "Mode toggers" << std::endl;
+                // std::cout << "Mode toggers" << std::endl;
                 break;
 
             default:
@@ -308,11 +307,11 @@ void AVRIOPort::updatePinRegister(u8 ddr){
 
     // Check if the PIN value has changed
     if (this->lastPin != newPin) {
-        std::cout << "newPin " << int(newPin) << " vs last pin " << int(this->lastPin) << std::endl;
+        // std::cout << "newPin " << int(newPin) << " vs last pin " << int(this->lastPin) << std::endl;
         for (u8 index = 0; index < 8; index++) {
             // Check if the value of this pin has changed
             if ((newPin & (1 << index)) != (this->lastPin & (1 << index))) {
-                std::cout << "value of pin " << int(index) << " has changed" << std::endl;
+                // std::cout << "value of pin " << int(index) << " has changed" << std::endl;
                 bool value = (newPin & (1 << index)) != 0;
 
                 // Toggle the interrupt for this pin
@@ -320,7 +319,7 @@ void AVRIOPort::updatePinRegister(u8 ddr){
 
                 // Notify the external clock listener if it exists
                 if (this->externalClockListeners[index]) {
-                    std::cout << "Checking the clock listener" << std::endl;
+                    // std::cout << "Checking the clock listener" << std::endl;
                     (*this->externalClockListeners[index])(value);
                 }
             }
@@ -343,10 +342,10 @@ void AVRIOPort::toggleInterrupt(u8 pin, bool risingEdge){
     AVRInterruptConfig *external = this->externalInts[pin];
     // Pointer to the ~port config's~ external interrupt at a given pin
     const AVRExternalInterrupt *externalConfig = externalInterrupts[pin];
-    std::cout<< "And here we are, togglin..." << std::endl;
+    // std::cout<< "And here we are, togglin..." << std::endl;
     // Now we handle the external interrupt
     if (external && externalConfig) {
-        std::cout<< "Check 0" << std::endl;
+        // std::cout<< "Check 0" << std::endl;
         const u8 EIMSK = externalConfig->EIMSK;
         const u8 index = externalConfig->index;
         const u8 EICR = externalConfig->EICR;
@@ -354,10 +353,10 @@ void AVRIOPort::toggleInterrupt(u8 pin, bool risingEdge){
 
         // If the data at EIMSK and 1 shifted to the index location is nonzero
         if (this->mainCPU->data[EIMSK] & (1 << index)) {
-            std::cout<< "Check 1" << std::endl;
+            // std::cout<< "Check 1" << std::endl;
             // Set up the configuration
             const u8 configuration = (this->mainCPU->data[EICR] >> iscOffset) & 0x3;
-            std::cout << "Configuration is: " << int(configuration) << std::endl; 
+            // std::cout << "Configuration is: " << int(configuration) << std::endl; 
             bool generateInterrupt = false;
             external->constant = false;
             // Now we check the interrupt mode via the configuration (either 0, 1, 2, or 3)
@@ -388,10 +387,10 @@ void AVRIOPort::toggleInterrupt(u8 pin, bool risingEdge){
     // Next, we check for and handle pin change interrupts - 1 & 1 & 1
     if (pinChange && this->PCINT && (pinChange->mask & (1 << pin))) {
         const u8 PCMSK = pinChange->PCMSK;
-        std::cout << "Confirm Pin change working" << std::endl;
+        // std::cout << "Confirm Pin change working" << std::endl;
         // If the PCMSK register is in the correct state, set a new interrupt flag
         if (this->mainCPU->data[PCMSK] & (1 << (pin + pinChange->offset))) {
-            std::cout << "Setting interrupt flag" << std::endl;
+            // std::cout << "Setting interrupt flag" << std::endl;
             this->mainCPU->setInterruptFlag(this->PCINT);
         }
     }
@@ -401,7 +400,7 @@ void AVRIOPort::toggleInterrupt(u8 pin, bool risingEdge){
 void AVRIOPort::attachInterruptHook(int reg, std::string registerType){
     // Return if register is invalid
     if(reg == 0){
-        std::cout << "NUH UH" << std::endl;
+        // std::cout << "NUH UH" << std::endl;
         return;
     }
     // Capture CPU and other necessary state in a lambda function
@@ -410,7 +409,7 @@ void AVRIOPort::attachInterruptHook(int reg, std::string registerType){
         {
         // Handle the register update if not a flag type
         if (registerType != "flag") {
-            std::cout << "We got a NOT flag" << std::endl;
+            // std::cout << "We got a NOT flag" << std::endl;
             this->mainCPU->data[reg] = value;
         }
 
@@ -419,16 +418,16 @@ void AVRIOPort::attachInterruptHook(int reg, std::string registerType){
             // Iterate through external interrupts for each GPIO
             for (auto *external : gpio->externalInts) {
                 if (external) {
-                    std::cout << "We got an EXTERNAL" << std::endl;
+                    // std::cout << "We got an EXTERNAL" << std::endl;
                     if (registerType == "mask") {
-                        std::cout << "We got a MASK" << std::endl;
+                        // std::cout << "We got a MASK" << std::endl;
                         this->mainCPU->updateInterruptsEnabled(external, value);
                     } else if (!external->constant && registerType == "flag") {
-                        std::cout << "We got an EXTERNAL FLAG" << std::endl;
+                        // std::cout << "We got an EXTERNAL FLAG" << std::endl;
                         this->mainCPU->clearInterruptByFlag(external, value);
                     }
                 } else {
-                    std::cout << "NO EXTERNAL" << std::endl;
+                    // std::cout << "NO EXTERNAL" << std::endl;
                 }
                 
             }
@@ -441,7 +440,7 @@ void AVRIOPort::attachInterruptHook(int reg, std::string registerType){
         return true;
     });
     mainCPU->writeHookVector[reg] = interruptWriteHook;
-    std::cout << "Hook added successfully" << std::endl;
+    // std::cout << "Hook added successfully" << std::endl;
 }
 
 // Tested: correctly queues or skips basend on the the contents of EIMSK, pinValue, etc. ✅
@@ -494,9 +493,11 @@ void AVRIOPort::checkExternalInterrupts(){
 /* Tested: ✅ */
 void AVRIOPort::writeGPIO(u8 value, u8 ddr){
 
+    std::cout << "INSIDE WRITEGPIO" << std::endl;
+
     // Calculate the new GPIO value based on the value, DDR, and override settings
     u8 newValue = (((value & this->overrideMask) | this->overrideValue) & ddr) | (value & ~ddr);
-    std::cout << "writeGPIO's calculated newValue: " << int(newValue) << std::endl;
+    // std::cout << "writeGPIO's calculated newValue: " << int(newValue) << std::endl;
     u8 prevValue = this->lastValue;
 
     // Check if the new value or DDR has changed
@@ -507,8 +508,8 @@ void AVRIOPort::writeGPIO(u8 value, u8 ddr){
 
         // Notify all GPIO listeners of the change
         for (const auto &listener : this->listeners) {
-            std::cout << "gonna invoke the listener" << std::endl;
-            listener(newValue, prevValue);
+            // std::cout << "gonna invoke the listener" << std::endl;
+            (*listener)(newValue, prevValue);
         }
     }
 }
@@ -521,7 +522,7 @@ void AVRIOPort::writeGPIO(u8 value, u8 ddr){
 
 // Create a sample GPIO listener
 // void GListenTest(u8 value, u8 oldValue){
-//     std::cout << "callin dat test func 1" << std::endl;
+//     std::cout << "!!!!! INSIDE THE LISTENER callin dat test func 1 !!!!!" << std::endl;
 // }
 // void GListenTest2(u8 value, u8 oldValue){
 //     std::cout << "callin dat test func 2" << std::endl;
@@ -542,6 +543,18 @@ void AVRIOPort::writeGPIO(u8 value, u8 ddr){
 //     });
 
 // int main(){
+
+    /* UNIT TEST 1: it('should invoke the listeners when the port is written to' ✅ */
+    // std::vector<u16> testPM(1024);
+    // CPU *cpu = new CPU(testPM);
+    // portBConfig *PB = new portBConfig;
+    // AVRIOPort *testIO = new AVRIOPort(cpu, PB);
+    // cpu->writeData(PB->DDR, 0x0f);
+    // testIO->addListener(GListenTest);
+    // cpu->writeData(PB->PORT, 0x55);
+    // std::cout << "Data at 0x23 should be 0x5, or the PINB value: " << int(cpu->data[0x23]) << std::endl;
+    // expect(listener).toHaveBeenCalledWith(0x55, 0);
+    // expect(cpu.data[0x23]).toEqual(0x5); // PINB should return port value
 
     /* testing constructor ✅*/
     // std::vector<u16> testPM(1024);

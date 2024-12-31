@@ -5,6 +5,13 @@
 
 CPU::CPU(std::vector<u16> progMem, int SRAMSize){
 
+    // EXPLICITLY CLEARING TIMER 0's TIMSK LOCATION
+    // this->data[110] = 0;
+    // std::fill(data, arr + 5, 0);
+    
+    // Filling data[] with zeros bb!!
+    std::fill(data, data + data_array_size, 0);
+
     this->SRAM_BYTES = SRAMSize;
 
     // Set up the writeHookVector and readHookFunctions with the correct size and fill with nullptr
@@ -12,12 +19,20 @@ CPU::CPU(std::vector<u16> progMem, int SRAMSize){
     this->readHookFunctions = std::vector<readHookFunction>(8448, nullptr);
 
     // Next, to fill the vector with null?
+    // std::cout << "PROG MEM SIZE:: " << progMem.size() << std::endl;
 
     // STEP 1: fill program memory with contents of progMem
     for(int i = 0; i < progMem.size(); i++) {
         this->programMemory.push_back(progMem[i]);
         // std::cout << "Program Memory at " << i << ": " << this->programMemory[i] << std::endl; 
     }
+
+    /* ~TRBL TEST 1~ and ~TRBL TEST 1b~: Check the output of program memory: */
+    // for(int i = 0; i < 100; i++) {
+    //     std::cout << int(programMemory[i]) << std::endl;
+    // }
+
+    // std::cout << "THIS->PROGRAM MEMORY SIZE: " << this->programMemory.size() << std::endl;
 
     // STEP 2: Fill programBytes with the contents of programMemory but in 8-bit chunks
    // Resize programBytes
@@ -117,19 +132,19 @@ void CPU::writeData(u16 address, u8 value, u8 mask){
 
     // If hookPtr exists
     if(hookPtr != nullptr) {
-        std::cout << "a hook exists at location " << address << std::endl;
+        // std::cout << "a hook exists at location " << address << std::endl;
         // If, by calling the writeHookFunction, we write the value at the location,
         // then we are already done!
         // !!!FOR NOW!!!: oldValue is the current data stored at address - may need to change later on
         // if(writeHookFunctions[address](value, data[address], address, mask) == true){
         if((*this->writeHookVector[address])(value, data[address], address, mask) == true){
-            std::cout << "Ok, the write hook function returned true, fam." << std::endl;
+            // std::cout << "Ok, the write hook function returned true, fam." << std::endl;
             return;
         }
     }
     // But in the case where we don't have a writeHookFunction for that location,
     // just hard-write the value at that location
-    std::cout << "No writeHooky :(" << std::endl;
+    // std::cout << "No writeHooky :( at "<< int(address) << std::endl;
     this->data[address] = value;
 }
 
@@ -139,11 +154,19 @@ u8 CPU::readData(u16 address){
 
     // If we are past the general purpose I/O registers (we don't care about those) AND the hook at that address exists
     if(address >= 32 && hookPtr){
-        std::cout << "a readhook exists at location " << address << std::endl;
+        // std::cout << "a readhook exists at location " << address << std::endl;
+        /* digging in */
+        // if(address == 110){
+        //     std::cout << "-->there's a read hook for 110" << std::endl;
+        // }
+
         return (*this->readHookFunctions[address])(address);
     }
     // Manually return the data
-    std::cout << "no readhook, will manually return" << std::endl;
+    // std::cout << "no readhook, will manually return, address is " << int(address) << std::endl;
+    // if(address == 110){
+    //     std::cout << "-->there's NO read hook for 110" << std::endl;
+    // }
     return this->data[address];
 }
 
@@ -171,7 +194,7 @@ bool CPU::getInterruptsEnabled(){
 }
 
 void CPU::setInterruptFlag(AVRInterruptConfig *interrupt) {
-    std::cout << "Inside set interrupt flag" << std::endl;
+    // std::cout << "Inside set interrupt flag" << std::endl;
     const u16 flagReg = interrupt->flagRegister;
     const u8 flagMsk = interrupt->flagMask;
     const u16 enReg = interrupt->enableRegister;
@@ -193,39 +216,64 @@ void CPU::setInterruptFlag(AVRInterruptConfig *interrupt) {
     }
 }
 
-void CPU::updateInterruptsEnabled(AVRInterruptConfig *interrupt, u8 registerValue) {
+void CPU::updateInterruptsEnabled(AVRInterruptConfig* interrupt, u8 registerValue) {
+    std::cout << "Inside updateInterruptsEnabled!" << std::endl;
+    const u8 enableMask = interrupt->enableMask;
+    const u16 flagRegister = interrupt->flagRegister;
+    const u8 flagMask = interrupt->flagMask;
+    const bool inverseFlag = interrupt->inverseFlag;
 
-    // extracts the enableMask, flagRegister, flagMask, inverseFlag from interrupt and saves them as consts
-    const u16 flagReg = interrupt->flagRegister;
-    const u8 flagMsk = interrupt->flagMask;
-    const bool inverse = interrupt->inverseFlag;
-    const u8 enMsk = interrupt->enableMask;
-    int bitSet = 0;
+    std::cout << "Right now, our register value is: " << int(registerValue) << " and our enableMask is: " << int(enableMask) << " and so our conditional is checking: " << int(registerValue & enableMask) << std::endl;
 
-    // IF registerValue & enableMask --> are 1?
-    if ((registerValue & enMsk) == enMsk) {
-        std::cout << "Enabled! Inside first IF" << std::endl;
-        // Then & the data[flagRegister] with flagMask, store in a const bitSet
-        bitSet = this->data[flagReg] & flagMsk;
-
-        if(inverse == true) {
-            // If !bitSet is true, bitSet is falsy (if it's 0b00000000)
-            if(bitSet == 0){
-                std::cout << "Inverse true and bitSet is 0" << std::endl;
-                this->queueInterrupt(interrupt);
-            }
-        }
-        // Otherwise, if inverse flag is false and bitSet is a number
-        else if (bitSet != 0) {
-            std::cout << "Inverse false and bitSet is not 0!" << std::endl;
+    if (registerValue & enableMask) {
+        const u8 bitSet = this->data[flagRegister] & flagMask;
+        // std::cout << "--> the data at the flagRegister: " << int(this->data[flagRegister]) << " & the flagMask: " << int(flagMask) << " gives us the bitSet: " << int(bitSet) << " <---" << std::endl;
+        if (inverseFlag ? !bitSet : bitSet) {
+            std::cout << "Queueing the interrupt!" << std::endl;
             this->queueInterrupt(interrupt);
         }
-    }
-    else {
-        std::cout << "clearing interrupt" << std::endl;
-        // this->clearInterrupt(interrupt, false);
+        std::cout << "Skippin innit" << std::endl;
+    } else {
+        std::cout << "Clearing the interrupt!" << std::endl;
+        this->clearInterrupt(interrupt, false);
     }
 }
+
+/* OLD updateInterruptsEnabled below VV*/
+
+// void CPU::updateInterruptsEnabled(AVRInterruptConfig *interrupt, u8 registerValue) {
+
+//     // extracts the enableMask, flagRegister, flagMask, inverseFlag from interrupt and saves them as consts
+//     const u16 flagReg = interrupt->flagRegister;
+//     const u8 flagMsk = interrupt->flagMask;
+//     const bool inverse = interrupt->inverseFlag;
+//     const u8 enMsk = interrupt->enableMask;
+//     int bitSet = 0;
+
+//     // IF registerValue & enableMask --> are 1?
+//     if ((registerValue & enMsk) == enMsk) {
+//         std::cout << "Enabled! Inside first IF" << std::endl;
+//         // Then & the data[flagRegister] with flagMask, store in a const bitSet
+//         bitSet = this->data[flagReg] & flagMsk;
+
+//         if(inverse == true) {
+//             // If !bitSet is true, bitSet is falsy (if it's 0b00000000)
+//             if(bitSet == 0){
+//                 std::cout << "Inverse true and bitSet is 0" << std::endl;
+//                 this->queueInterrupt(interrupt);
+//             }
+//         }
+//         // Otherwise, if inverse flag is false and bitSet is a number
+//         else if (bitSet != 0) {
+//             std::cout << "Inverse false and bitSet is not 0!" << std::endl;
+//             this->queueInterrupt(interrupt);
+//         }
+//     }
+//     else {
+//         std::cout << "clearing interrupt and actually calling it this time lol" << std::endl;
+//         this->clearInterrupt(interrupt, false);
+//     }
+// }
 
 void CPU::queueInterrupt(AVRInterruptConfig *interrupt){
 
@@ -251,43 +299,81 @@ void CPU::queueInterrupt(AVRInterruptConfig *interrupt){
     }      
 }
 
-void CPU::clearInterrupt(AVRInterruptConfig *interrupt, bool clearFlag) {
-    // takes in the address, flagRegister, and flagMask of an interrupt, and clearFlag = true by default
-    const u16 flagReg = interrupt->flagRegister;
-    const u8 flagMsk = interrupt->flagMask;
-    const u8 addr = interrupt->address;
-    // IF clearFlag is true
-    if(clearFlag) {
+void CPU::clearInterrupt(AVRInterruptConfig* interrupt, bool clearFlag) {
+    const u8 address = interrupt->address;
+    const u16 flagRegister = interrupt->flagRegister;
+    const u8 flagMask = interrupt->flagMask;
+
+    // Clear the flag if clearFlag is true
+    if (clearFlag) {
         std::cout << "Clear flag true" << std::endl;
-        // then data[flagRegister] gets &= with ~flagMask and stored back in it
-        this->data[flagReg] &= ~flagMsk;  
-        std::cout << "Data in flagReg &= ~flagMsk " << int(this->data[flagReg]) << std::endl;   
+        this->data[flagRegister] &= ~flagMask;
     }
-    // Would extract pending interrupts here too, but for now don't worry about it
-    const i16 maxInt = this->maxInterrupt;
-    // IF no pending interrupts at address, return :(
-    if (this->pendingInterrupts[addr] == 0) {
+
+    // Access pending interrupts and max interrupt
+    auto& pendingInterrupts = this->pendingInterrupts;
+    const i16 maxInterrupt = this->maxInterrupt;
+
+    // If no interrupt is pending at the address, return
+    if (pendingInterrupts[address] == nullptr) {
         std::cout << "Interrupt not in the queue, returning" << std::endl;
         return;
     }
-    // Clear the interrupt from the queue
-    std::cout << "Before removal: " << pendingInterrupts[addr] << std::endl;
-    this->pendingInterrupts[addr] = nullptr;
-    std::cout << "After removal: " << pendingInterrupts[addr] << std::endl;
-    // IF nextInterrupt is address
-    if (this->nextInterrupt == addr) {
-        // then nextInterrupt set to -1
-        nextInterrupt = -1;
-        // Search for the next pending interrupt, make it the next Interrupt
-        for (int i = addr + 1; i <= maxInterrupt; i++) {
-            if (pendingInterrupts[i]) {
-                this->nextInterrupt = i;
+
+    // Remove the interrupt from the queue
+    pendingInterrupts[address] = nullptr;
+
+    // Update the next interrupt if the cleared interrupt was the next scheduled
+    if (this->nextInterrupt == address) {
+        this->nextInterrupt = -1; // Reset to no interrupt
+        for (int i = address + 1; i <= maxInterrupt; i++) {
+            if (pendingInterrupts[i] != nullptr) {
+                this->nextInterrupt = i; // Set the next interrupt
                 break;
             }
         }
-        std::cout << "Next interrupt: " << nextInterrupt << std::endl;
     }
 }
+
+/* Old clear interrupt VVV */
+
+// void CPU::clearInterrupt(AVRInterruptConfig *interrupt, bool clearFlag) {
+//     // takes in the address, flagRegister, and flagMask of an interrupt, and clearFlag = true by default
+//     const u16 flagReg = interrupt->flagRegister;
+//     const u8 flagMsk = interrupt->flagMask;
+//     const u8 addr = interrupt->address;
+//     // IF clearFlag is true
+//     if(clearFlag) {
+//         std::cout << "Clear flag true" << std::endl;
+//         // then data[flagRegister] gets &= with ~flagMask and stored back in it
+//         this->data[flagReg] &= ~flagMsk;  
+//         std::cout << "Data in flagReg &= ~flagMsk " << int(this->data[flagReg]) << std::endl;   
+//     }
+//     // Would extract pending interrupts here too, but for now don't worry about it
+//     const i16 maxInt = this->maxInterrupt;
+//     // IF no pending interrupts at address, return :(
+//     if (this->pendingInterrupts[addr] == 0) {
+//         std::cout << "Interrupt not in the queue, returning" << std::endl;
+//         return;
+//     }
+//     // Clear the interrupt from the queue
+//     std::cout << "Before removal: " << pendingInterrupts[addr] << std::endl;
+//     this->pendingInterrupts[addr] = nullptr;
+//     std::cout << "After removal: " << pendingInterrupts[addr] << std::endl;
+//     // IF nextInterrupt is address
+//     if (this->nextInterrupt == addr) {
+//         // then nextInterrupt set to -1
+//         nextInterrupt = -1;
+//         // Search for the next pending interrupt, make it the next Interrupt
+//         for (int i = addr + 1; i <= maxInterrupt; i++) {
+//             if (pendingInterrupts[i]) {
+//                 this->nextInterrupt = i;
+//                 break;
+//             }
+//         }
+//         std::cout << "Next interrupt: " << nextInterrupt << std::endl;
+//     }
+// }
 
 void CPU::clearInterruptByFlag(AVRInterruptConfig *interrupt, u8 registerValue) {
     // Store flagRegister and flagMask as consts
@@ -306,167 +392,291 @@ void CPU::clearInterruptByFlag(AVRInterruptConfig *interrupt, u8 registerValue) 
     }
 }
 
-AVRClockEventCallback CPU::addClockEvent(AVRClockEventCallback callback, int numCycles) {
-    // Will use the clockEventPool instead of creating a separate reference to it here
+AVRClockEventCallback CPU::addClockEvent(AVRClockEventCallback callback, int cycles) {
+    // Calculate absolute cycle time for the event
+    cycles = this->cycles + std::max(1, cycles);
 
-    // Absolute cycle time until callback function is executed
-    numCycles = this->cycles + std::max(1, numCycles);
-
-    // ~~ Basically, if there's a pooled clock event, make it the next entry, otherwise create a new one ~~
+    // Get an available clock event entry from the pool or create a new one
     AVRClockEventEntry *entry;
-    
-    // const entry - of type AVRClockEventEntry which *might* be assigned maybeEntry, or if it's null, assign it
-    if(clockEventPool.size() > 1) {
-        // Grabbing the last element of the vector to see if it's a reusable clock event
-        // This line causing seg fault
-        AVRClockEventEntry *maybeEntry = this->clockEventPool.back();
-        entry = maybeEntry;
-    }
-    // Returned null, need to create a new event entry
-    else {
-        // Passing the
+    if (!this->clockEventPool.empty()) {
+        entry = this->clockEventPool.back();
+        this->clockEventPool.pop_back();
+        // std::cout << "CLK:: REUSING" << std::endl;
+    } else {
         entry = new AVRClockEventEntry();
+        // std::cout << "CLK:: NEW CLOCK EVENT" << std::endl;
     }
-    // set cycles of entry = to cycles
-    entry->cyclesForEvent = numCycles;
-    // set callback of entry = to callback
+
+    // Initialize the entry with the provided data
+    entry->cyclesForEvent = cycles;
     entry->callbackFunc = callback;
+    if(entry->callbackFunc == nullptr) {
+        std::cout << "nullllll" <<std::endl;
+    }
+    // std::cout << "STARTING CALLING THE CALLBACK FUNC IN ENTRY" << std::endl;
+    // (*entry->callbackFunc)();
+    // std::cout << "DONE CALLING THE CALLBACK FUNC IN ENTRY" << std::endl;
     entry->next = nullptr;
 
-    // Extracting CPU's nextClockEvent as nextClockEvent
-    AVRClockEventEntry *clockEvent =  this->nextClockEvent;
-    // let lastItem = null
-    AVRClockEventEntry *lastEvent = nullptr;
+    // Find the insertion point in the sorted linked list
+    AVRClockEventEntry *clockEvent = this->nextClockEvent;
+    AVRClockEventEntry *lastItem = nullptr;
 
-    // WHILE clockEvent AND (&&) clockEvent.cycles < cycles - loop through the clock events and update the "next" event they point to
-    while (clockEvent && clockEvent->cyclesForEvent < numCycles) {
-        // lastItem = clockEvent
-        lastEvent = clockEvent;
-
-        // clockEvent gets the next clockEvent
+    while (clockEvent && clockEvent->cyclesForEvent < cycles) {
+        lastItem = clockEvent;
         clockEvent = clockEvent->next;
     }
-    // ~~ Finding the insertion point ~~
-    // If the last event is a valid entry
-    if(lastEvent != nullptr) {
-        // lastItem.next gets assigned entry
-        lastEvent->next = entry;
 
-        // entry.next is assigned clockEvent
+    // Insert the new entry in the appropriate position
+    if (lastItem) {
+        lastItem->next = entry;
         entry->next = clockEvent;
-    }
-    // Otherwise, it's the first entry in the vector
-    else {
-        // nextClockEvent gets assigned entry
+    } else {
         this->nextClockEvent = entry;
-
-        // entry.next gets assigned clockEvent
         entry->next = clockEvent;
     }
+
     return callback;
 }
 
-bool CPU::updateClockEvent(AVRClockEventCallback callback, int cycles) {
+/*** ADD CLOCK EVENT ***/
 
-    // If we successfully clear the old clock event associated with this callback func
-    if(this->clearClockEvent(callback)) {
-        // Then let's update with appropriate number of cycles
+// AVRClockEventCallback CPU::addClockEvent(AVRClockEventCallback callback, int numCycles) {
+//     // Will use the clockEventPool instead of creating a separate reference to it here
+//     // Absolute cycle time until callback function is executed
+//     numCycles = this->cycles + std::max(1, numCycles);
+//     // ~~ Basically, if there's a pooled clock event, make it the next entry, otherwise create a new one ~~
+//     AVRClockEventEntry *entry;
+//     // const entry - of type AVRClockEventEntry which *might* be assigned maybeEntry, or if it's null, assign it
+//     if(clockEventPool.size() > 1) {
+//         // Grabbing the last element of the vector to see if it's a reusable clock event
+//         // This line causing seg fault
+//         AVRClockEventEntry *maybeEntry = this->clockEventPool.back();
+//         entry = maybeEntry;
+//     }
+//     // Returned null, need to create a new event entry
+//     else {
+//         // Passing the
+//         entry = new AVRClockEventEntry();
+//     }
+//     // set cycles of entry = to cycles
+//     entry->cyclesForEvent = numCycles;
+//     // set callback of entry = to callback
+//     entry->callbackFunc = callback;
+//     entry->next = nullptr;
+//     // Extracting CPU's nextClockEvent as nextClockEvent
+//     AVRClockEventEntry *clockEvent =  this->nextClockEvent;
+//     // let lastItem = null
+//     AVRClockEventEntry *lastEvent = nullptr;
+//     // WHILE clockEvent AND (&&) clockEvent.cycles < cycles - loop through the clock events and update the "next" event they point to
+//     while (clockEvent && clockEvent->cyclesForEvent < numCycles) {
+//         // lastItem = clockEvent
+//         lastEvent = clockEvent;
+//         // clockEvent gets the next clockEvent
+//         clockEvent = clockEvent->next;
+//     }
+//     // ~~ Finding the insertion point ~~
+//     // If the last event is a valid entry
+//     if(lastEvent != nullptr) {
+//         // lastItem.next gets assigned entry
+//         lastEvent->next = entry;
+//         // entry.next is assigned clockEvent
+//         entry->next = clockEvent;
+//     }
+//     // Otherwise, it's the first entry in the vector
+//     else {
+//         // nextClockEvent gets assigned entry
+//         this->nextClockEvent = entry;
+//         // entry.next gets assigned clockEvent
+//         entry->next = clockEvent;
+//     }
+//     return callback;
+// }
+
+/*** UPDATE CLOCK EVENT ***/
+
+bool CPU::updateClockEvent(AVRClockEventCallback callback, int cycles) {
+    // First, clear the existing clock event associated with the callback
+    if (this->clearClockEvent(callback)) {
+        // If successful, add the updated clock event with the new cycle count
         this->addClockEvent(callback, cycles);
         return true;
     }
+    // Return false if the event was not cleared
     return false;
 }
+
+// bool CPU::updateClockEvent(AVRClockEventCallback callback, int cycles) {
+//     // If we successfully clear the old clock event associated with this callback func
+//     if(this->clearClockEvent(callback)) {
+//         // Then let's update with appropriate number of cycles
+//         this->addClockEvent(callback, cycles);
+//         return true;
+//     }
+//     return false;
+// }
+
+/*** CLEAR CLOCK EVENT ***/
 
 bool CPU::clearClockEvent(AVRClockEventCallback callback) {
-    // extracting CPU's nextClockEvent as clockEvent
-    // Extracting CPU's nextClockEvent as nextClockEvent
-    AVRClockEventEntry *clockEvent =  this->nextClockEvent;
-    // IF NOT clockEvent
-    if (clockEvent == nullptr) {
+    AVRClockEventEntry* clockEvent = this->nextClockEvent;
+    if (!clockEvent) {
         return false;
     }
-    // Will use this->clockEventPool in this function
-    // let lastItem = null
-    AVRClockEventEntry *lastEvent = nullptr;
 
-    // WHILE clockEvent returns true
+    AVRClockEventEntry* lastItem = nullptr;
+
     while (clockEvent) {
-        // IF clockEvent's callback = our callback
         if (clockEvent->callbackFunc == callback) {
-            
-            // IF lastItem exists
-            if(lastEvent != nullptr) {
-                // lastItem.next = clockEvent.next
-                lastEvent->next = clockEvent->next;
-            }
-            // ELSE
-            else {
-                // this.nextClockEvent = clockEvent.next
+            if (lastItem) {
+                lastItem->next = clockEvent->next;
+            } else {
                 this->nextClockEvent = clockEvent->next;
             }
-            // IF length of clockEventPool < 10
-            if (this->clockEventPool.size() < 10){
-                // push clockEvent onto the clockEventPool
+
+            // Return the entry to the pool if the pool has space
+            if (this->clockEventPool.size() < 10) {
                 this->clockEventPool.push_back(clockEvent);
             }
-            // Successfully updated pointers
+
             return true;
         }
-        // Move down the linked list
-        lastEvent = clockEvent;
+
+        lastItem = clockEvent;
         clockEvent = clockEvent->next;
     }
-    // Didn't find a match
+
     return false;
 }
 
+// bool CPU::clearClockEvent(AVRClockEventCallback callback) {
+//     // extracting CPU's nextClockEvent as clockEvent
+//     // Extracting CPU's nextClockEvent as nextClockEvent
+//     AVRClockEventEntry *clockEvent =  this->nextClockEvent;
+//     // IF NOT clockEvent
+//     if (clockEvent == nullptr) {
+//         return false;
+//     }
+//     // Will use this->clockEventPool in this function
+//     // let lastItem = null
+//     AVRClockEventEntry *lastEvent = nullptr;
+//     // WHILE clockEvent returns true
+//     while (clockEvent) {
+//         // std::cout << "STUCK" << std::endl;
+//         // IF clockEvent's callback = our callback
+//         if (clockEvent->callbackFunc == callback) {
+//             std::cout << "TRIGGERED CLEAR CLK" << std::endl;
+//             // IF lastItem exists
+//             if(lastEvent != nullptr) {
+//                 // lastItem.next = clockEvent.next
+//                 lastEvent->next = clockEvent->next;
+//             }
+//             // ELSE
+//             else {
+//                 // this.nextClockEvent = clockEvent.next
+//                 this->nextClockEvent = clockEvent->next;
+//             }
+//             // IF length of clockEventPool < 10
+//             if (this->clockEventPool.size() < 10){
+//                 // push clockEvent onto the clockEventPool
+//                 this->clockEventPool.push_back(clockEvent);
+//             }
+//             // Successfully updated pointers
+//             return true;
+//         }
+//         // Move down the linked list
+//         lastEvent = clockEvent;
+//         clockEvent = clockEvent->next;
+//     }
+//     // Didn't find a match
+//     return false;
+// }
+
+/*** TICK ***/
+
 void CPU::tick() {
+    // Handle the next clock event
+    AVRClockEventEntry* nextClockEvent = this->nextClockEvent;
 
-    // ~~ Handling next clock event ~~
- 
-    // get cpu's next clock event and store as a const nextClockEvent
-    AVRClockEventEntry *nextClk = this->nextClockEvent;
+    if (nextClockEvent && nextClockEvent->cyclesForEvent <= this->cycles) {
+        // Execute the callback function
+        // std::cout << "STARTING CALLING THE CALLBACK FUNC" << std::endl;
+        (*nextClockEvent->callbackFunc)();
 
-    // IF (nextClockEvent && nextClockEvent.cycles <= this.cycles)
-    if (nextClk && nextClk->cyclesForEvent <= this->cycles){
-        // std::cout << "made it here"<< std::endl;
-        // call the callback function on nextClockEvent (should return void)
-        (*nextClk->callbackFunc)();
-        // std::cout << "called it back"<< std::endl;
-        // this.nextClockEvent = nextClockEvent.next
-        this->nextClockEvent = nextClk->next;
+        // Advance to the next clock event in the list
+        this->nextClockEvent = nextClockEvent->next;
 
-        // IF length of clockEventPool < 10
+        // Return the processed event to the pool if space is available
         if (this->clockEventPool.size() < 10) {
-            // push nextClockEvent onto the clockEventPool
-            this->clockEventPool.push_back(nextClk);
-        }            
+            this->clockEventPool.push_back(nextClockEvent);
+        }
     }
 
-    // ~~ Handling next interrupt ~~
+    // Handle the next interrupt
+    int nextInterrupt = this->nextInterrupt;
+    if (this->getInterruptsEnabled() && nextInterrupt >= 0) {
+        // Get the interrupt configuration
+        AVRInterruptConfig* interrupt = this->pendingInterrupts[nextInterrupt];
 
-    // Extracting CPU's nextInterrupt as nextInterrupt
-    // Skip for now
+        if (interrupt) {
+            // Trigger the interrupt
+            avrInterrupt(this, interrupt->address);
 
-    // IF CPU's interrupts are enabled AND nextInterrupt >= 0
-    if (this->getInterruptsEnabled() && this->nextInterrupt >= 0) {
-
-        // declare a const, interrupt, and assign it this.pendingInterrupts[nextInterrupt]
-        AVRInterruptConfig *interrupt = pendingInterrupts[nextInterrupt];
-
-        // call avrInterrupt and pass it the CPU and interrupt.address
-        avrInterrupt(this, interrupt->address);
-
-        // ~~~ DELETE NEXT LINE: FOR TESTING PURPOSES ONLY: calling the fake interrupt ~~~ 
-        // this->fakeISRAndRETI();
-
-        // IF interrupt is not constant
-        if (!interrupt->constant) {
-            // then clear the interrrupt
-            this->clearInterrupt(interrupt);
-       }
+            // Clear the interrupt if it's not constant
+            if (!interrupt->constant) {
+                this->clearInterrupt(interrupt);
+            }
+        }
     }
 }
+
+// void CPU::tick() {
+
+//     // ~~ Handling next clock event ~~
+ 
+//     // get cpu's next clock event and store as a const nextClockEvent
+//     AVRClockEventEntry *nextClk = this->nextClockEvent;
+
+//     // IF (nextClockEvent && nextClockEvent.cycles <= this.cycles)
+//     if (nextClk && nextClk->cyclesForEvent <= this->cycles){
+//         // std::cout << "made it here"<< std::endl;
+//         // call the callback function on nextClockEvent (should return void)
+//         (*nextClk->callbackFunc)();
+//         // std::cout << "called it back"<< std::endl;
+//         // this.nextClockEvent = nextClockEvent.next
+//         this->nextClockEvent = nextClk->next;
+
+//         // IF length of clockEventPool < 10
+//         if (this->clockEventPool.size() < 10) {
+//             // push nextClockEvent onto the clockEventPool
+//             this->clockEventPool.push_back(nextClk);
+//         }            
+//     }
+
+//     // ~~ Handling next interrupt ~~
+
+//     // Extracting CPU's nextInterrupt as nextInterrupt
+//     // Skip for now
+
+//     // IF CPU's interrupts are enabled AND nextInterrupt >= 0
+//     if (this->getInterruptsEnabled() && this->nextInterrupt >= 0) {
+
+//         // declare a const, interrupt, and assign it this.pendingInterrupts[nextInterrupt]
+//         AVRInterruptConfig *interrupt = pendingInterrupts[nextInterrupt];
+
+//         // call avrInterrupt and pass it the CPU and interrupt.address
+//         avrInterrupt(this, interrupt->address);
+
+//         // ~~~ DELETE NEXT LINE: FOR TESTING PURPOSES ONLY: calling the fake interrupt ~~~ 
+//         // this->fakeISRAndRETI();
+
+//         // IF interrupt is not constant
+//         if (!interrupt->constant) {
+//             // then clear the interrrupt
+//             this->clearInterrupt(interrupt);
+//        }
+//     }
+// }
 
 
 void CPU::fakeISRAndRETI() {
