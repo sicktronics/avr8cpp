@@ -29,6 +29,7 @@ void avrInterrupt(CPU *cpu, u16 address) {
 
     // Simulate the number of cycles it would take the CPU to do this
     cpu->cycles += 2;
+    std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * 2));
 
     // Set PC to addr, which is the interrupt vector address where the interrupt handling routine is located.
     // This change in PC redirects the CPU to start executing the interrupt service routine (ISR).

@@ -1,5 +1,9 @@
 #include "execute.h"
 #include "intelHex.h"
+#include <unistd.h>
+#include <chrono>
+#include <thread>
+#include <iostream>
 
 AVRRunner::AVRRunner(std::string lilHexGal){
 
@@ -44,14 +48,21 @@ AVRRunner::AVRRunner(std::string lilHexGal){
 }
 
 void AVRRunner::execute(){
-    const long cyclesToRun = this->cpu->cycles + workUnitCycles;
+    long cyclesToRun = this->cpu->cycles + workUnitCycles;
     while (this->cpu->cycles < cyclesToRun) {
+
+        // std::cout << "-----> CYCLE COUNT: " << this->cpu->cycles << std::endl;
+        // // Waiting for 1/10 of a second
+        // std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
         // std::cout << "--> BOUTTA EXEC <--" << std::endl;
         avrInstruction(this->cpu);
         // std::cout << "--> EXEC <--" << std::endl;
         this->cpu->tick();
         // std::cout << "--> TICK <--" << std::endl;
+        
+
+        cyclesToRun = this->cpu->cycles + workUnitCycles;
     }
-    std::cout << "Cycles run: " << int(this->cpu->cycles) << std::endl;
-    std::cout << "REACHING END OF PROGRAM" << std::endl;
+    // std::cout << "REACHING END OF PROGRAM" << std::endl;
 }

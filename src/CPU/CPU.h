@@ -2,6 +2,8 @@
 #include <functional>
 #include <variant>
 #include <vector>
+#include <chrono>
+#include <thread>
 
 #pragma once 
 
@@ -18,6 +20,10 @@ typedef unsigned long u32;
 typedef unsigned long long u64;
 typedef int16_t i16;
 typedef int8_t i8;
+
+// How long a clock cycle takes in nanoseconds (technically, 62.5 for an uno)
+const int cycleTime = 62;
+
 
 /*
  A constant to represent the size of the register space (registerSpace) 

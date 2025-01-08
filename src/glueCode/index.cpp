@@ -3,6 +3,9 @@
 #include <fstream>
 #include <string>
 #include <unistd.h>
+#include <chrono>
+#include <thread>
+#include <iostream>
 /* JUST FOR TESTING VVV */
 // #include <SFML/Graphics.hpp>
 // #include <iostream>
@@ -73,9 +76,16 @@ void executeProgram(std::string lilHexGal) {
         std::cout << "THIS IS THE LED: " << led13 << std::endl;
         // appendBoolToFile("output.txt", led13);
         led12 = (runner->portB->pinState(4) == PinState::High);
-        std::cout << "THIS IS THE LED 12: " << led12 << std::endl;
-        /* just for testing*/
-        sleep(1);
+        // std::cout << "THIS IS THE LED 12: " << led12 << std::endl;
+
+        /* just for testing VV */
+
+        // std::cout << "-----> CYCLE COUNT: " << runner->cpu->cycles << std::endl;
+        // Waiting for 1/10 of a second
+        // std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+
+        // sleep(1);
     }));
 
     std::cout << "--> ADDED LISTENER SUCCESSFULLY <--" << std::endl;

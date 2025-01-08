@@ -4,7 +4,7 @@
 
 // ATMega 328p
 const u16 FLASH = 0x8000;
-const int workUnitCycles = 5000000;
+const int workUnitCycles = 500000;
 
 class AVRRunner {
     public:
