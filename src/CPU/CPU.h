@@ -4,16 +4,25 @@
 #include <vector>
 #include <chrono>
 #include <thread>
+#pragma once
 
-#pragma once 
+/*
+  This project is a translation of Uri Shaked's avr8js repository: 
+    https://github.com/wokwi/avr8js
+  The avr8js repository is part of Wokwi. Check out the awesome work they're doing here: 
+    https://wokwi.com/?utm_medium=blog&utm_source=wokwi-blog
 
+  Header file for the CPU module.
+
+  - Translated into C++ by:  Parker Caywood Mayer
+  - Last modified:           Jan 2025
+*/
+
+/* We'll be using AVRPortConifg and AVRIOPort in this module */
 struct AVRPortConfig;
-
 class AVRIOPort;
 
-// Global consts and variables
-
-// Shorthands for different types
+/* Shorthands for different types */
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned long u32;
@@ -21,44 +30,35 @@ typedef unsigned long long u64;
 typedef int16_t i16;
 typedef int8_t i8;
 
-// How long a clock cycle takes in nanoseconds (technically, 62.5 for an uno)
+
+/* How long a clock cycle takes in nanoseconds (technically, 62.5 for an Uno board) */
 const int cycleTime = 62;
 
-
 /*
- A constant to represent the size of the register space (registerSpace) 
- (data memory minus internal SRAM, so 32 gen purp registers, 
- 64 i/o registers, 160 extended i/o registers) -> size = 0x100 = 256
+  A constant to represent the size of the register space 
+  (data memory minus internal SRAM, so 32 general purpose registers, 
+  64 i/o registers, 160 extended i/o registers) -> size = 0x100 = 256
 */
 const int REGISTER_SPACE = 0x100;
 /*
- A constant for the maximum number of interrupts allowed - 128
- is sufficient
+ A constant for the maximum number of interrupts allowed - 128 is sufficient
 */
 const int MAX_INTERRUPTS = 128;
 
-class CPU;
-
-// Memory hook system for writing data to memory
 /*
- An array of function pointers - each will handle different functionality around writing data to a certain location. We will define different functions for different parts of the microcontroller - e.g., different writeHook functions for different I/O ports.
-
- May need to add functionality for typedefs that return void, but this should work. If the specific writeHook function writes data, returns true, if not, returns false
+  A type of function called writeHookFunction. Each will handle different functionality around writing data to a certain location. We will define different functions for different parts of the microcontroller - e.g., different writeHook functions for different I/O ports or special registers.
 */
-// typedef bool (*writeHookFunction) (u8 value, u8 oldValue, u16 address, u8 mask);
 typedef std::shared_ptr<std::function<bool(u8, u8, u16, u8)>> writeHookFunction;
+// OLD --> typedef bool (*writeHookFunction) (u8 value, u8 oldValue, u16 address, u8 mask);
 
-
-
-// Memory hook system for reading data from memory
 /*
-  An array of function pointers - each will handle different functionality around reading data from a certain location. We will define different functions for different parts of the microcontroller - e.g., different read Hook functions for different timer configs.
+  A type of function called readHookFunction. Each will handle different functionality around reading data from a certain location. We will define different functions for different parts of the microcontroller - e.g., different read Hook functions for different timer configurations.
 */
-// typedef u8 (*readHookFunction) (u16 address);
 typedef std::shared_ptr<std::function<u8(u16)>> readHookFunction;
+// OLD -->typedef u8 (*readHookFunction) (u16 address);
 
 /* The size of our data array */
- constexpr size_t data_array_size = 8192 + REGISTER_SPACE;
+constexpr size_t dataArraySize = 8192 + REGISTER_SPACE;
 
 /*
  A struct for configuring AVR interrupts
@@ -70,49 +70,47 @@ struct AVRInterruptConfig {
     u8 enableMask;
     u16 flagRegister;
     u8 flagMask;
-    // constant?: boolean;
-    // These should technically be bool OR null...fix
+    // Note: constant should technically be bool OR null
     bool constant;
-    // inverseFlag?: boolean;
-    // These should technically be bool OR null...fix
+    // Note: inverseFlag should technically be bool OR null
     bool inverseFlag = false;
 };
 
-/*
-A type of function that acts as a "callback" function for clock events
-*/
-// typedef void (*AVRClockEventCallback) ();
+/* A type of function that acts as a "callback" function for clock events */
 typedef std::shared_ptr<std::function<void()>> AVRClockEventCallback;
+// OLD --> typedef void (*AVRClockEventCallback) ();
 
-/*
-A struct representing a clock event entry
-*/
+/* A struct representing a clock event entry */
 struct AVRClockEventEntry {
-  // Number of cycles needed for the event (?)
+  // Number of cycles needed for the event
   int cyclesForEvent;
-  // callback: AVRClockEventCallback;
   AVRClockEventCallback callbackFunc;
-  // next: AVRClockEventEntry | null;
   AVRClockEventEntry *next;
 };
 
-
+/* --- And now, what we've all been waiting for: the CPU class --- */
 class CPU {
-
+  // Since our use of this system is pretty limited for now, we are keeping it public
   public:
-
   // Program memory
   std::vector<u16> programMemory;
-
-  // Program memory stored in byte-sized chunks
+  // Program memory but stored in byte-sized chunks
   std::vector<u8> programBytes;
-
   // size of SRAM in bytes
   int SRAM_BYTES = 8192;
 
-  // Function for setting stack pointer (SP) value
+  /*
+    Function for setting stack pointer (SP) value.
+    @param value: The location at which you would like to point stack pointer.
+    @returns No return value 
+  */
   void setSP(u16 value);
-  // Function for getting SP value
+
+  /* 
+    Function for getting the stack pointer value.
+    @returns A 16-bit unsigned int that represents the location to which the SP is pointing.
+    
+  */
   u16 getSP();
 
   // Program Counter
@@ -121,69 +119,80 @@ class CPU {
   // For tracking clock cycles
   u32 cycles = 0;
 
-  // Default contructor - note that for this file SRAM size is const
+  /* Default contructor - note that for this file SRAM size is const  */
   CPU(std::vector<u16> progMem, int SRAMSize = 8192);
 
-  // Reset function
+  /* 
+    Reset function
+    - Points stack pointer to last data memory location
+    - Resets program counter
+    - Empty pending interrupts
+    - Reset next interrupt
+    - Reset next clock event
+  */
   void reset();
 
-  /*
-  Internal data, stored in 8-bit chunks - note fixed SRAM size
-  */
+  /* Internal data, stored in 8-bit chunks - note fixed SRAM size */
+  u8 data[dataArraySize];
 
- 
-  u8 data[data_array_size];
-
-  /*
-  Internal data, stored in 16-bit chunks
-  */
+  /* Internal data, stored in 16-bit chunks */
   // Ignore for now, doesn't appear to be used
 
-  /*
-  creating a DataView object, and pass it in the "data" buffer (the complete binary string stored in "data") - The DataView view provides a low-level interface for reading and writing multiple number types in a binary ArrayBuffer, without having to care about the platform's endianness.
-
-  For now, we will manually return two bytes of data in little-endian format: https://en.wikipedia.org/wiki/Endianness
-  BYTE OFFSET is the address of the LOWER BYTE
-  BYTE OFFSET + 1 should be the UPPER BYTE
+  /* 
+    Getter for a 16-bit value. For now, we will manually return the two bytes of data in little-endian format: https://en.wikipedia.org/wiki/Endianness. Note BYTE OFFSET is the address of the LOWER BYTE, BYTE OFFSET + 1 is the UPPER BYTE.
+    @param byteOffset: Location in memory you'd like to retrieve (lower byte)
+    @returns The value stored at byteOffset and byteOffset+1
   */
   u16 getUint16LittleEndian(int byteOffset);
-  void setUint16LittleEndian(int byteOffset, u16 value);
-
-  void setInt16LittleEndian(u16 address, i16 value);
 
   /*
-  Array of write hook and read hook function pointers - size is # of SRAM bytes + REGISTER_SPACE, same size as data array (?)
+    Setter for a 2-byte UNSIGNED value.
+    @param byteOffset: Location in memory at which you'd like to store the value (lower byte)
+    @param value: The value you're trying to store
   */
-  // writeHookFunction writeHookFunctions[8192 + REGISTER_SPACE];
-  // XXX Transitioning to a writeHookVector
-  std::vector<writeHookFunction> writeHookVector;
+  void setUint16LittleEndian(int byteOffset, u16 value);
 
+  /*
+    Setter for a 2-byte SIGNED value.
+    @param byteOffset: Location in memory at which you'd like to store the value (lower byte)
+    @param value: The value you're trying to store (signed)
+  */
+  void setInt16LittleEndian(u16 address, i16 value);
+
+  // Vector of write hook functions 
+  std::vector<writeHookFunction> writeHookVector;
+  // OLD --> writeHookFunction writeHookFunctions[8192 + REGISTER_SPACE];
+
+  // Vector of read hook functions
   std::vector<readHookFunction> readHookFunctions;
 
   /*
-  Function for writing data
+    Function for writing data.
+    @param address: Where are you writing to?
+    @param value: What are you trying to write?
+    @param mask: Are you masking for specific bits?
+    @returns No value returned
   */
   void writeData(u16 address, u8 value, u8 mask = 0xff);
   // Matches params of writeHooks
   // void writeData(u8 value, u8 oldValue, u16 address, u8 mask);
 
   /*
-  Function for reading data
+    Function for reading data.
+    @param address: Where are you reading from?
+    @returns The byte that you're trying to read
   */
   u8 readData(u16 address);
 
-  /*
-  Whether the program counter (PC) can address 22 bits (the default is 16)
-  */
+  // Whether the program counter (PC) can address 22 bits (the default is 16)
   bool pc22Bits = false; 
 
-  /*
-  GPIO initialization
-  */
-  // creating a collection ("Set") of type AVRIOPort called gpioPorts
+  /* --- GPIO stuff! --- */
+
+  // Creating a vector of type AVRIOPort called gpioPorts
   std::vector<AVRIOPort *> GPIOPorts;
 
-  // Creating an empty array of type AVRIOPort called gpioByPort
+  // Creating an empty Array of type AVRIOPort called gpioByPort
   AVRIOPort *GPIOByPort[255];
 
   // 16-bit signed integer to track nextInterrupt (initialized to -1)
@@ -192,87 +201,92 @@ class CPU {
   // 16-bit signed integer to track maxInterrupt (initialized to 0)
   i16 maxInterrupt = 0;
 
+  /* Function onWatchdogReset currently not implemented! */
   void onWatchdogReset();
 
   /*
-  Returns contents of the status Register, data[95] (aka 0x5F, which matches the datasheet)
+    @returns Contents of the status Register (SREG), data[95] (aka 0x5F, which matches the datasheet)
   */
   u8 getSREG();
 
   /*
-  Returns contents of the status Register, data[95] (aka 0x5F, which matches the datasheet)
+    @returns Whether interrupts are currently enabled, according to SREG
   */
   bool getInterruptsEnabled();
 
   /*
-  Function for setting interrupt flags!!
+    Function for setting interrupt flags
+    @param interrupt: A pointer to an AVRInterruptConfig.
+    @returns No return value
   */
   void setInterruptFlag(AVRInterruptConfig *interrupt);
 
   /*
-  Function for updating whether interrupts are enabled
+    Function for updating whether interrupts are enabled
+    @param interrupt: A pointer to an AVRInterruptConfig
+    @param registerValue: The byte you're checking against the enable mask
+    @returns No return value
   */
   void updateInterruptsEnabled(AVRInterruptConfig *interrupt, u8 registerValue);
 
   /*
-  Function for queueing interrupts - make bool?
+    Function for queueing interrupts
+    @param interrupt: A pointer to an AVRInterruptConfig
+    @returns No return value
   */
   void queueInterrupt(AVRInterruptConfig *interrupt);
   
   /*
-  Function for clearing a queued interrupt - make bool?
+    Function for clearing a queued interrupt
+    @param interrupt: A pointer to an AVRInterruptConfig
+    @param clearFlag: Bool for whether the flag register should be cleared or not
+    @returns No return value
   */
   void clearInterrupt(AVRInterruptConfig *interrupt, bool clearFlag = true);
   
   /*
-  Function for clearing a queued interrupt by its flag - make bool?
+    Function for clearing a queued interrupt by its flag
+    @param interrupt: A pointer to an AVRInterruptConfig
+    @param registerValue: The byte you're checking against the flag mask
+    @returns No return value
   */
-  void clearInterruptByFlag(AVRInterruptConfig *interrupt, u8 registerValue); // regVal might be int?
-  
-  // Change back to private after testing
-  public:
+  void clearInterruptByFlag(AVRInterruptConfig *interrupt, u8 registerValue);
 
-  /*
-  Array of pending interrupts
-  */
+  // Array of pending interrupts
   AVRInterruptConfig* pendingInterrupts[MAX_INTERRUPTS] = {nullptr};
 
-  /*
-  A pointer to the next clock event
-  */
+  // A pointer to the next clock event
   AVRClockEventEntry *nextClockEvent;
 
-  /*
-  An array of clock event entries
-  */
+  // A vector of clock event entries
   std::vector<AVRClockEventEntry *> clockEventPool;
 
-  public:
-
   /*
-  Function for adding a clock event
+    Function for adding a clock event
+    @param callback: The callback function you'd like to run
+    @param cycles: Number of cycles for the clock event
+    @returns The callback function
   */
   AVRClockEventCallback addClockEvent(AVRClockEventCallback callback, int cycles);
 
   /*
-  Function for updating a clock event
+    Function for updating a clock event
+    @param callback: The callback function you'd like to run
+    @param cycles: Number of cycles for the clock event
+    @returns Whether update successful or not
   */
   bool updateClockEvent(AVRClockEventCallback callback, int cycles);
 
   /*
-  Function for clearing a clock event
+    Function for clearing a clock event
+    @param callback: The callback function you'd like to run
+    @returns Whether the clear was successful or not
   */
   bool clearClockEvent(AVRClockEventCallback callback);
 
-  /*
-  Function for the "ticking" of the clock
-  */
+  /* Function for the "ticking" of the CPU - checking clock events and interrupt statuses */
   void tick();
 
-  /*
-  A test function to fake an interrupt service routine + return
-  */
+  /* For FALL 2024 Demo: A test function to fake an interrupt service routine + return */
   void fakeISRAndRETI();
-
-   
 };

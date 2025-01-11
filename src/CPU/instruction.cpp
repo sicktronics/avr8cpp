@@ -1,5 +1,16 @@
 #include "instruction.h"
 
+/*
+  This project is a translation of Uri Shaked's avr8js repository: 
+    https://github.com/wokwi/avr8js
+  The avr8js repository is part of Wokwi. Check out the awesome work they're doing here: 
+    https://wokwi.com/?utm_medium=blog&utm_source=wokwi-blog
+
+  CPP for the instruction module.
+
+  - Translated into C++ by:  Parker Caywood Mayer
+  - Last modified:           Jan 2025
+*/
 
 bool isTwoWordInstruction(u16 opcode) {
     return (
@@ -14,46 +25,10 @@ bool isTwoWordInstruction(u16 opcode) {
     );
 }
 
-/* ~TRBL TEST 2~ */
-int i = 0;
-
 void avrInstruction(CPU *cpu){
 
-    /* ~TRBL TEST 2~ */
-    // if(i < 100){
-    //     std::cout << "Current PC at i = " << int(i) << ": " << int(cpu->PC) << std::endl;
-    //     i++;
-    // }
-
-
     // Extract the opcode at the current pc
-    /*
-    const opcode = cpu.progMem[cpu.pc];
-    */
-    // std::cout << "--> PROGRAM MEMORY SIZE: " << cpu->programMemory.size() << std::endl;
     const u16 opcode = cpu->programMemory[cpu->PC];
-    // std::cout << "--> GOT OPCODE SUCCESSFULLY <--" << std::endl;
-    // std::cout << int(opcode) << std::endl;
-
-    /* diggin in */
-    if(i == 66){
-        std::cout << "Here's the opcode at i = 66 " <<  int(opcode) << std::endl;
-    }
-
-    /* diggin in */
-    // if((((opcode & 0x1F0) >> 4) == 24  || ((opcode & 0x1F0) >> 4) + 16 == 24) && (i < 100)){
-    //     std::cout << "Our register is 24 and our opcode is: " << int(opcode) << " and our i is: " << i << std::endl; 
-    // }
-    // if((((opcode & 0x1F0) >> 4) == 110  || ((opcode & 0x1F0) >> 4) + 16 == 110) && (i < 100)){
-    //     std::cout << "--> Our register is 110 and our opcode is: " << int(opcode) << " and our i is: " << i << std::endl; 
-    // }
-
-
-
-
-    // if(opcode == 37788) {
-    //     std::cout << "WE GOT A WRITE TO PORT B VIA STX" << std::endl;
-    // }
 
     // Check for ADC opcode: 0001 11rd dddd rrrr
     if ((opcode & 0xFC00) == 0x1C00) {
@@ -447,9 +422,6 @@ void avrInstruction(CPU *cpu){
     }
     else if (opcode == 0x9419) {
     // EIJMP opcode: 1001 0100 0001 1001
-
-        // std::cout << "WE'RE IN EIJMP" << std::endl;
-
         // Get the value of the EIND register
         u8 eind = cpu->data[0x5C];
         // Update the program counter to the target address
@@ -622,9 +594,6 @@ void avrInstruction(CPU *cpu){
     }
     else if (opcode == 0x9409) {
     // IJMP opcode: 1001 0100 0000 1001
-
-        // std::cout << "WE'RE IN IJMP" << std::endl;
-
         // Set the program counter to the address in the Z register (R31:R30)
         cpu->PC = cpu->getUint16LittleEndian(30) - 1;
         // Increment the cycle count
@@ -737,11 +706,6 @@ void avrInstruction(CPU *cpu){
         u8 value = cpu->readData(address);
         // Extract the destination register index and store the value
         u8 d = (opcode & 0x1F0) >> 4;
-        // if(i == 64){
-        //     std::cout << "-->We're in LDS!! We are currently loading a value into address " << int(d) << std::endl;
-        //     std::cout << "-->The value we're reading in is... " << int(value) << " and the address from which we're reading is " << int(address) << std::endl;
-        // }
-
         cpu->data[d] = value;
         // Increment the program counter to skip the second word of the instruction
         cpu->PC++;
@@ -915,9 +879,6 @@ void avrInstruction(CPU *cpu){
     }
     else if (opcode == 0x95C8) {
     // LPM opcode: 1001 0101 1100 1000
-
-        // std::cout << "WE'RE IN LPM" << std::endl;
-
         // Load the byte from program memory into R0
         u16 address = cpu->getUint16LittleEndian(30); // Address in the Z register
         cpu->data[0] = cpu->programBytes[address];
@@ -1105,11 +1066,6 @@ void avrInstruction(CPU *cpu){
         u8 d = ((opcode & 0xF0) >> 4) + 16; // Destination register (R16 to R31)
         u8 K = (opcode & 0xF) | ((opcode & 0xF00) >> 4); // Immediate value
         u8 R = cpu->data[d] | K;
-
-        // if(i < 100){
-        //     std::cout << "--> WE'RE IN SBR YO, we're writing to register: " << int(((opcode & 0xF0) >> 4) + 16) << std::endl;
-        //     std::cout << "In register 24, we're ORing the existing value: " << int(cpu->data[d]) << " and the immediate value: " << int(K) << " to get the total value: " << int(cpu->data[d] | K) << std::endl;
-        // }
 
         // Store the result back in the destination register
         cpu->data[d] = R;
@@ -1457,11 +1413,7 @@ void avrInstruction(CPU *cpu){
         u8 value = cpu->data[(opcode & 0x1F0) >> 4];
         // Fetch the address from the next word in program memory
         u16 address = cpu->programMemory[cpu->PC + 1];
-        if(i == 66){
-            // std::cout << "WE'RE IN STS! Address: " << int(address) << ", value: " << int(value) << std::endl;
-            std::cout << "STS!! Right now, we are getting value: " << int(value) << " from data[] at address: " << int((opcode & 0x1F0) >> 4) << std::endl;
 
-        }
         // Write the value to the specified address
         cpu->writeData(address, value);
         // Increment the program counter to skip the second word
@@ -1472,13 +1424,11 @@ void avrInstruction(CPU *cpu){
     }
     else if ((opcode & 0xFE0F) == 0x920C) {
     // STX opcode: 1001 001r rrrr 1100
-        // std::cout << "STX" << std::endl;
 
         // Retrieve the value from the destination register
         u8 value = cpu->data[(opcode & 0x1F0) >> 4];
         // Retrieve the address from the X register (R27:R26)
         u16 address = cpu->getUint16LittleEndian(26);
-        std::cout << "STX, address: " << int(address) << " value: " << int(value) << std::endl;
         // Write the value to the specified address
         cpu->writeData(address, value);
         // Increment the cycle count
@@ -1714,101 +1664,9 @@ void avrInstruction(CPU *cpu){
         cpu->data[address] = val1;
         cpu->data[r] = val2;
     }
-    /*
-    cpu.pc = (cpu.pc + 1) % cpu.progMem.length;
-    cpu.cycles++;
-    */
-    // if(i < 100){
-    //     // std::cout << "PC just before update at i = " << int(i) << ": " << int(cpu->PC) << std::endl;
-    //     // std::cout << "THE VALUE OF TIMER 0's TIMSK IS " << int(cpu->data[110]) << std::endl;
-    // }
+    // Shift the Program Counter
     cpu->PC = (cpu->PC + 1) % cpu->programMemory.size();
-    /* ~TRBL TEST 2~ */
-    // if(i < 100){
-    //     std::cout << "New calculated PC at i = " << int(i) << ": " << int(cpu->PC) << std::endl;
-    //     i++;
-    // }
+    // Increment the cycles
     cpu->cycles++;
     std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
 }
-
-/*** TESTING ZONE ***/
-
-// // General-purpose registers
-// constexpr int r0 = 0;
-// constexpr int r1 = 1;
-// constexpr int r2 = 2;
-// constexpr int r3 = 3;
-// constexpr int r4 = 4;
-// constexpr int r5 = 5;
-// constexpr int r6 = 6;
-// constexpr int r7 = 7;
-// constexpr int r8 = 8;
-// constexpr int r16 = 16;
-// constexpr int r17 = 17;
-// constexpr int r18 = 18;
-// constexpr int r19 = 19;
-// constexpr int r20 = 20;
-// constexpr int r21 = 21;
-// constexpr int r22 = 22;
-// constexpr int r23 = 23;
-// constexpr int r24 = 24;
-// constexpr int r26 = 26;
-// constexpr int r27 = 27;
-// constexpr int r31 = 31;
-
-// // Pointer registers
-// constexpr int X = 26;
-// constexpr int Y = 28;
-// constexpr int Z = 30;
-
-// // Special registers
-// constexpr int RAMPZ = 0x5B;
-// constexpr int EIND = 0x5C;
-// constexpr int SP = 93;
-// constexpr int SPH = 94;
-// constexpr int SREG = 95;
-
-// // SREG Bits: I-HSVNZC
-// constexpr int SREG_C = 0b00000001; // Carry
-// constexpr int SREG_Z = 0b00000010; // Zero
-// constexpr int SREG_N = 0b00000100; // Negative
-// constexpr int SREG_V = 0b00001000; // Overflow
-// constexpr int SREG_S = 0b00010000; // Sign
-// constexpr int SREG_H = 0b00100000; // Half Carry
-// constexpr int SREG_I = 0b10000000; // Global Interrupt Enable
-
-// int main(){
-
-    /* SBC  ✅*/
-    /*
-    it('should execute `SBC r0, r1` instruction when carry is on and result overflows', () => {
-    loadProgram('SBC r0, r1');
-    cpu.data[r0] = 0;
-    cpu.data[r1] = 10;
-    cpu.data[95] = SREG_C;
-    avrInstruction(cpu);
-    expect(cpu.pc).toEqual(1);
-    expect(cpu.cycles).toEqual(1);
-    expect(cpu.data[r0]).toEqual(245);
-    expect(cpu.data[SREG]).toEqual(SREG_H | SREG_S | SREG_N | SREG_C);
-  });
-  */
-    // std::vector<u16> testPM(0x8000);
-    // CPU *cpu = new CPU(testPM);
-    // // Manually load into program memory
-    // //...
-    // cpu->programMemory[0] = 0x0801;
-    // cpu->data[r0] = 0;
-    // cpu->data[r1] = 10;
-    // cpu->data[95] = SREG_C;
-    // avrInstruction(cpu);
-    // std::cout << "expect(cpu.pc).toEqual(1): " << int(cpu->PC) << std::endl;
-    // std::cout << "expect(cpu.cycles).toEqual(1): " << int(cpu->cycles) << std::endl;
-    // std::cout << "expect(cpu.data[r0]).toEqual(245): " << int(cpu->data[r0]) << std::endl;
-    // std::cout << "expect(cpu.data[SREG]).toEqual(SREG_H | SREG_S | SREG_N | SREG_C): " << int(cpu->data[SREG]) << std::endl;
-
-
-
-
-// }

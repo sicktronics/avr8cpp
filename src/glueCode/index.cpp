@@ -31,19 +31,6 @@ std::string hexiCode = "";
 
 int main(int argc, char* argv[]){
 
-    /* Just for testing VVV */
-    // Create a window
-    // sf::Vector2f v1(350.f, 250.f);
-    // sf::Vector2u v2(800, 600);
-    // sf::VideoMode VidMode(v2);
-    // sf::RenderWindow window(VidMode, "LED Blink Test");
-    // Create a circle
-    // sf::CircleShape circle(100.f); // Radius of 100
-    // circle.setPosition(v1);  // Center the circle
-    // circle.setFillColor(sf::Color::Black); // Initial color
-
-    int variable = 0; // Variable to control the color
-
     // If user input is 1, run compileAndRun();
     // If user input is 0, terminate program.
     cout << "Hello! Enter 1 to test the simulation. Enter zero to exit. >> ";
@@ -69,31 +56,19 @@ void executeProgram(std::string lilHexGal) {
 
     std::cout << "--> CONSTRUCTION SUCCESSFUL <--" << std::endl;
 
+    /*** Set up listeners to different ports below! ***/
+
     // Add listener to portB
    runner->portB->addListener(std::make_shared<std::function<void(u8, u8)>>(
     [runner](u8 value, u8 oldValue) {
         led13 = (runner->portB->pinState(5) == PinState::High);
         std::cout << "THIS IS THE LED: " << led13 << std::endl;
-        // appendBoolToFile("output.txt", led13);
         led12 = (runner->portB->pinState(4) == PinState::High);
-        // std::cout << "THIS IS THE LED 12: " << led12 << std::endl;
-
-        /* just for testing VV */
-
-        // std::cout << "-----> CYCLE COUNT: " << runner->cpu->cycles << std::endl;
-        // Waiting for 1/10 of a second
-        // std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-
-        // sleep(1);
     }));
 
     std::cout << "--> ADDED LISTENER SUCCESSFULLY <--" << std::endl;
 
-    // runner->execute(runner->cpu);
     runner->execute();
-
-
 }
 
 void compileAndRun(){
@@ -110,14 +85,4 @@ void compileAndRun(){
     std::cout << "Executing program..." << std::endl;
     executeProgram(hexiCode);
 
-}
-
-void appendBoolToFile(const std::string& filePath, bool value) {
-    std::ofstream outFile(filePath, std::ios::app); // Open in append mode
-    if (outFile.is_open()) {
-        outFile << (value ? "true" : "false") << "\n"; // Append value and a newline
-        outFile.close();
-    } else {
-        std::cerr << "Error: Unable to open file for appending." << std::endl;
-    }
 }

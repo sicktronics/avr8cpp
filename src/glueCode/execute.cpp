@@ -14,9 +14,6 @@ AVRRunner::AVRRunner(std::string lilHexGal){
     std::vector<u8> programB = std::vector<u8>(0);
     // std::cout << programB.size() << std::endl;
     loadHex(lilHexGal, programB);
-    // for (int i = 0; i < 100; i++){
-    //     std::cout << int(programB[i]) << std::endl;
-    // }
 
     // Now, we need to fill the u16 array with the u8 array contents
     for (size_t i = 0; i < programB.size(); i += 2) {
@@ -50,19 +47,9 @@ AVRRunner::AVRRunner(std::string lilHexGal){
 void AVRRunner::execute(){
     long cyclesToRun = this->cpu->cycles + workUnitCycles;
     while (this->cpu->cycles < cyclesToRun) {
-
-        // std::cout << "-----> CYCLE COUNT: " << this->cpu->cycles << std::endl;
-        // // Waiting for 1/10 of a second
-        // std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-        // std::cout << "--> BOUTTA EXEC <--" << std::endl;
         avrInstruction(this->cpu);
-        // std::cout << "--> EXEC <--" << std::endl;
         this->cpu->tick();
-        // std::cout << "--> TICK <--" << std::endl;
         
-
         cyclesToRun = this->cpu->cycles + workUnitCycles;
     }
-    // std::cout << "REACHING END OF PROGRAM" << std::endl;
 }

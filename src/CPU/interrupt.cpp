@@ -1,5 +1,17 @@
 #include "interrupt.h"
 
+/*
+  This project is a translation of Uri Shaked's avr8js repository: 
+    https://github.com/wokwi/avr8js
+  The avr8js repository is part of Wokwi. Check out the awesome work they're doing here: 
+    https://wokwi.com/?utm_medium=blog&utm_source=wokwi-blog
+
+  CPP for the interrupt module.
+
+  - Translated into C++ by:  Parker Caywood Mayer
+  - Last modified:           Jan 2025
+*/
+
 void avrInterrupt(CPU *cpu, u16 address) {
 
     // get the contents of the stack pointer
