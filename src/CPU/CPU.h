@@ -4,6 +4,8 @@
 #include <vector>
 #include <chrono>
 #include <thread>
+#include <memory>
+#include <cstdint>
 #pragma once
 
 /*
@@ -29,10 +31,24 @@ typedef unsigned long u32;
 typedef unsigned long long u64;
 typedef int16_t i16;
 typedef int8_t i8;
+/*
+  A type of function called writeHookFunction. Each will handle different functionality around writing data to a certain location. We will define different functions for different parts of the microcontroller - e.g., different writeHook functions for different I/O ports or special registers.
+*/
+typedef std::shared_ptr<std::function<bool(u8, u8, u16, u8)>> writeHookFunction;
+// OLD --> typedef bool (*writeHookFunction) (u8 value, u8 oldValue, u16 address, u8 mask);
 
+/*
+  A type of function called readHookFunction. Each will handle different functionality around reading data from a certain location. We will define different functions for different parts of the microcontroller - e.g., different read Hook functions for different timer configurations.
+*/
+typedef std::shared_ptr<std::function<u8(u16)>> readHookFunction;
+// OLD -->typedef u8 (*readHookFunction) (u16 address);
+
+/* A type of function that acts as a "callback" function for clock events */
+typedef std::shared_ptr<std::function<void()>> AVRClockEventCallback;
+// OLD --> typedef void (*AVRClockEventCallback) ();
 
 /* How long a clock cycle takes in nanoseconds (technically, 62.5 for an Uno board) */
-const int cycleTime = 62;
+const int cycleTime = 63;
 
 /*
   A constant to represent the size of the register space 
@@ -45,17 +61,7 @@ const int REGISTER_SPACE = 0x100;
 */
 const int MAX_INTERRUPTS = 128;
 
-/*
-  A type of function called writeHookFunction. Each will handle different functionality around writing data to a certain location. We will define different functions for different parts of the microcontroller - e.g., different writeHook functions for different I/O ports or special registers.
-*/
-typedef std::shared_ptr<std::function<bool(u8, u8, u16, u8)>> writeHookFunction;
-// OLD --> typedef bool (*writeHookFunction) (u8 value, u8 oldValue, u16 address, u8 mask);
 
-/*
-  A type of function called readHookFunction. Each will handle different functionality around reading data from a certain location. We will define different functions for different parts of the microcontroller - e.g., different read Hook functions for different timer configurations.
-*/
-typedef std::shared_ptr<std::function<u8(u16)>> readHookFunction;
-// OLD -->typedef u8 (*readHookFunction) (u16 address);
 
 /* The size of our data array */
 constexpr size_t dataArraySize = 8192 + REGISTER_SPACE;
@@ -76,9 +82,6 @@ struct AVRInterruptConfig {
     bool inverseFlag = false;
 };
 
-/* A type of function that acts as a "callback" function for clock events */
-typedef std::shared_ptr<std::function<void()>> AVRClockEventCallback;
-// OLD --> typedef void (*AVRClockEventCallback) ();
 
 /* A struct representing a clock event entry */
 struct AVRClockEventEntry {
@@ -92,6 +95,14 @@ struct AVRClockEventEntry {
 class CPU {
   // Since our use of this system is pretty limited for now, we are keeping it public
   public:
+
+  // Vector of write hook functions 
+  std::vector<writeHookFunction> writeHookVector;
+  // OLD --> writeHookFunction writeHookFunctions[8192 + REGISTER_SPACE];
+
+  // Vector of read hook functions
+  std::vector<readHookFunction> readHookFunctions;
+
   // Program memory
   std::vector<u16> programMemory;
   // Program memory but stored in byte-sized chunks
@@ -158,13 +169,6 @@ class CPU {
     @param value: The value you're trying to store (signed)
   */
   void setInt16LittleEndian(u16 address, i16 value);
-
-  // Vector of write hook functions 
-  std::vector<writeHookFunction> writeHookVector;
-  // OLD --> writeHookFunction writeHookFunctions[8192 + REGISTER_SPACE];
-
-  // Vector of read hook functions
-  std::vector<readHookFunction> readHookFunctions;
 
   /*
     Function for writing data.
@@ -288,5 +292,5 @@ class CPU {
   void tick();
 
   /* For FALL 2024 Demo: A test function to fake an interrupt service routine + return */
-  void fakeISRAndRETI();
+  // void fakeISRAndRETI();
 };

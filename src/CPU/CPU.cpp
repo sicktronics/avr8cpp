@@ -333,29 +333,29 @@ void CPU::tick() {
     }
 }
 
-void CPU::fakeISRAndRETI() {
+// void CPU::fakeISRAndRETI() {
 
-    // Emergency routine that must be executed!!
-    int a = 1;
-    int b = 2;
-    int c = a + b;
-    // Increment to represent how long this function took (v fake)
-    this->cycles++;
-    u16 i = 0;
-    // Get the return address from the interrupt
-    if (this->pc22Bits) {
-        i = this->getSP() + 3;
-    }
-    else {
-        i = this->getSP() + 2;
-    }
-    // Set the SP to the return address
-    this->setSP(i);
-    // Removing the -1 for now, not relevant for our purposes
-    this->PC = ((this->data[i-1] << 8) + (this->data[i]));
-    if (pc22Bits) {
-    this->PC |= this->data[i - 2] << 16;
-    }
-}
+//     // Emergency routine that must be executed!!
+//     int a = 1;
+//     int b = 2;
+//     int c = a + b;
+//     // Increment to represent how long this function took (v fake)
+//     this->cycles++;
+//     u16 i = 0;
+//     // Get the return address from the interrupt
+//     if (this->pc22Bits) {
+//         i = this->getSP() + 3;
+//     }
+//     else {
+//         i = this->getSP() + 2;
+//     }
+//     // Set the SP to the return address
+//     this->setSP(i);
+//     // Removing the -1 for now, not relevant for our purposes
+//     this->PC = ((this->data[i-1] << 8) + (this->data[i]));
+//     if (pc22Bits) {
+//     this->PC |= this->data[i - 2] << 16;
+//     }
+// }
 
 // int main(){}

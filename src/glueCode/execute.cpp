@@ -44,6 +44,12 @@ void AVRRunner::execute(){
     while(simBeginTicking && (this->cpu->cycles < cyclesToRun)){
         avrInstruction(this->cpu);
         this->cpu->tick();
-        cyclesToRun = this->cpu->cycles + workUnitCycles;
+        // cyclesToRun = this->cpu->cycles + workUnitCycles;
     }
+}
+
+// Just for testing VVV 
+int main()
+{
+    compileAndRun();
 }

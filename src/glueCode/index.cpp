@@ -42,7 +42,7 @@ void executeProgram(std::string lilHexGal) {
    runner->portB->addListener(std::make_shared<std::function<void(u8, u8)>>(
     [](u8 value, u8 oldValue) {
         led13 = (runner->portB->pinState(5) == PinState::High);
-        // std::cout<< "THIS IS THE LED: " << led13 << std::endl;
+        std::cout<< "THIS IS THE LED: " << led13 << std::endl;
     }));
 
     runner->execute();
