@@ -357,3 +357,5 @@ void CPU::fakeISRAndRETI() {
     this->PC |= this->data[i - 2] << 16;
     }
 }
+
+// int main(){}

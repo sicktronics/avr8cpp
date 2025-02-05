@@ -47,7 +47,7 @@ AVRIOPort::AVRIOPort(CPU *cpu, AVRPortConfig *portConfig){
     auto PORTWriteHook = std::make_shared<std::function<bool(u8, u8, u16, u8)>>(
         [cpu, portConfig, this](u8 value, u8 oldValue, u16 address, u8 mask) 
         {
-            std::cout << "Using PORT Write hook" << std::endl;
+            // std::cout << "Using PORT Write hook" << std::endl;
             // Read current DDR status to determine which pins are input (0) or output (1)
             u8 DDRMask = cpu->data[portConfig->DDR];
             // update port with new values
