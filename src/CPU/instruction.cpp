@@ -107,8 +107,7 @@ void avrInstruction(CPU *cpu){
         cpu->data[95] = sreg;
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
-    }
+        preciseDelay(cycleTime);    }
     else if ((opcode & 0xFC00) == 0x2000) {
     // AND opcode: 0010 00rd dddd rrrr
 
@@ -196,8 +195,7 @@ void avrInstruction(CPU *cpu){
             cpu->PC += k;
             // Increment the cycle count
             cpu->cycles++;
-            std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
-        }
+            preciseDelay(cycleTime);        }
     }
     else if ((opcode & 0xFC00) == 0xF000) {
     // BRBS opcode: 1111 00kk kkkk ksss
@@ -211,8 +209,7 @@ void avrInstruction(CPU *cpu){
             cpu->PC += k;
             // Increment the cycle count
             cpu->cycles++;
-            std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
-        }
+            preciseDelay(cycleTime);        }
     }
     else if ((opcode & 0xFF8F) == 0x9408) {
     // BSET opcode: 1001 0100 0sss 1000
@@ -255,9 +252,9 @@ void avrInstruction(CPU *cpu){
         // Update the cycle count
         cpu->cycles += pc22Bits ? 4 : 3;
         if(pc22Bits) {
-            std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * 4));
+            preciseDelay(cycleTime*4);
         } else {
-            std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * 3));
+            preciseDelay(cycleTime*3);
         }
     }
     else if ((opcode & 0xFF00) == 0x9800) {
@@ -377,7 +374,7 @@ void avrInstruction(CPU *cpu){
             cpu->PC += skipSize;
             // Increment the cycle count by the number of skipped words
             cpu->cycles += skipSize;
-            std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * skipSize));
+            preciseDelay(cycleTime * skipSize);
         }
     }
     else if ((opcode & 0xFE0F) == 0x940A) {
@@ -418,8 +415,7 @@ void avrInstruction(CPU *cpu){
         cpu->PC = ((eind << 16) | cpu->getUint16LittleEndian(30)) - 1;
         // Increment the cycle count
         cpu->cycles += 3;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * 3));
-    }
+        preciseDelay(cycleTime*3);    }
     else if (opcode == 0x9419) {
     // EIJMP opcode: 1001 0100 0001 1001
         // Get the value of the EIND register
@@ -428,8 +424,7 @@ void avrInstruction(CPU *cpu){
         cpu->PC = ((eind << 16) | cpu->getUint16LittleEndian(30)) - 1;
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
-    }
+        preciseDelay(cycleTime);    }
     else if (opcode == 0x95D8) {
     // ELPM opcode: 1001 0101 1101 1000
 
@@ -439,8 +434,7 @@ void avrInstruction(CPU *cpu){
         cpu->data[0] = cpu->programBytes[(rampz << 16) | cpu->getUint16LittleEndian(30)];
         // Increment the cycle count
         cpu->cycles += 2;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * 2));
-    }
+        preciseDelay(cycleTime*2);    }
     else if ((opcode & 0xFE0F) == 0x9006) {
     // ELPM(REG) opcode: 1001 000d dddd 0110
 
@@ -452,8 +446,7 @@ void avrInstruction(CPU *cpu){
         cpu->data[d] = cpu->programBytes[(rampz << 16) | cpu->getUint16LittleEndian(30)];
         // Increment the cycle count
         cpu->cycles += 2;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * 2));
-    }
+        preciseDelay(cycleTime*2);    }
     else if ((opcode & 0xFE0F) == 0x9007) {
     // ELPM(INC) opcode: 1001 000d dddd 0111
 
@@ -473,8 +466,7 @@ void avrInstruction(CPU *cpu){
         }
         // Increment the cycle count
         cpu->cycles += 2;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * 2));
-    }
+        preciseDelay(cycleTime*2);    }
     else if ((opcode & 0xFC00) == 0x2400) {
     // EOR opcode: 0010 01rd dddd rrrr
 
@@ -514,8 +506,7 @@ void avrInstruction(CPU *cpu){
         cpu->data[95] = sreg;
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
-    }
+        preciseDelay(cycleTime);    }
     /*** XXX Might have some issues with signed stuff ***/
     else if ((opcode & 0xFF88) == 0x0380) {
     // FMULS opcode: 0000 0011 1ddd 0rrr
@@ -538,8 +529,7 @@ void avrInstruction(CPU *cpu){
         cpu->data[95] = sreg;
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
-    }
+        preciseDelay(cycleTime);    }
     /*** XXX Might have some issues with signed stuff ***/
     else if ((opcode & 0xFF88) == 0x0388) {
     // FMULSU opcode: 0000 0011 1ddd 1rrr
@@ -562,7 +552,7 @@ void avrInstruction(CPU *cpu){
         cpu->data[95] = sreg;
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
     }
     else if (opcode == 0x9509) {
     // ICALL opcode: 1001 0101 0000 1001
@@ -587,9 +577,9 @@ void avrInstruction(CPU *cpu){
         // Increment the cycle count
         cpu->cycles += pc22Bits ? 3 : 2;
         if(pc22Bits) {
-            std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * 3));
+            preciseDelay(cycleTime*3);
         } else {
-            std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * 2));
+            preciseDelay(cycleTime*2);
         }
     }
     else if (opcode == 0x9409) {
@@ -598,7 +588,7 @@ void avrInstruction(CPU *cpu){
         cpu->PC = cpu->getUint16LittleEndian(30) - 1;
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
     }
     else if ((opcode & 0xF800) == 0xB000) {
     // IN opcode: 1011 0AAd dddd AAAA
@@ -641,7 +631,7 @@ void avrInstruction(CPU *cpu){
         cpu->PC = targetAddress - 1;
         // Increment the cycle count for JMP
         cpu->cycles += 2;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * 2));
+        preciseDelay(cycleTime*2);
     }
     else if ((opcode & 0xFE0F) == 0x9206) {
     // LAC opcode: 1001 001r rrrr 0110
@@ -699,7 +689,7 @@ void avrInstruction(CPU *cpu){
 
         // Increment the cycle count for LDS
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
         // Read the absolute address from the next word in program memory
         u16 address = cpu->programMemory[cpu->PC + 1];
         // Read the value from the specified address
@@ -715,7 +705,7 @@ void avrInstruction(CPU *cpu){
 
         // Increment the cycle count for LDX
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
         // Read the address stored in the X register (R27:R26)
         u16 address = cpu->getUint16LittleEndian(26);
         // Read the value from the specified address
@@ -731,7 +721,7 @@ void avrInstruction(CPU *cpu){
         u16 x = cpu->getUint16LittleEndian(26);
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
         // Read the value from the address in the X register
         u8 value = cpu->readData(x);
         // Extract the destination register index and store the value
@@ -748,7 +738,7 @@ void avrInstruction(CPU *cpu){
         cpu->setUint16LittleEndian(26, x);
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
         // Read the value from the decremented address
         u8 value = cpu->readData(x);
         // Extract the destination register index and store the value
@@ -760,7 +750,7 @@ void avrInstruction(CPU *cpu){
 
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
         // Load the value from the address in the Y register (R29:R28)
         u16 address = cpu->getUint16LittleEndian(28);
         u8 value = cpu->readData(address);
@@ -775,7 +765,7 @@ void avrInstruction(CPU *cpu){
         u16 y = cpu->getUint16LittleEndian(28);
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
         // Read the value from the address in the Y register
         u8 value = cpu->readData(y);
         // Store the value in the destination register
@@ -792,7 +782,7 @@ void avrInstruction(CPU *cpu){
         cpu->setUint16LittleEndian(28, y);
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
         // Read the value from the decremented address
         u8 value = cpu->readData(y);
         // Store the value in the destination register
@@ -805,7 +795,7 @@ void avrInstruction(CPU *cpu){
 
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
         // Calculate the displacement
         u8 displacement = (opcode & 0x7) | ((opcode & 0xC00) >> 7) | ((opcode & 0x2000) >> 8);
         // Compute the effective address (Y register + displacement)
@@ -821,7 +811,7 @@ void avrInstruction(CPU *cpu){
 
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
         // Load the value from the address in the Z register (R31:R30)
         u16 address = cpu->getUint16LittleEndian(30);
         u8 value = cpu->readData(address);
@@ -836,7 +826,7 @@ void avrInstruction(CPU *cpu){
         u16 z = cpu->getUint16LittleEndian(30);
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
         // Read the value from the address in the Z register
         u8 value = cpu->readData(z);
         // Store the value in the destination register
@@ -853,7 +843,7 @@ void avrInstruction(CPU *cpu){
         cpu->setUint16LittleEndian(30, z);
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
         // Read the value from the decremented address
         u8 value = cpu->readData(z);
         // Store the value in the destination register
@@ -866,7 +856,7 @@ void avrInstruction(CPU *cpu){
 
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
         // Calculate the displacement
         u8 displacement = (opcode & 0x7) | ((opcode & 0xC00) >> 7) | ((opcode & 0x2000) >> 8);
         // Compute the effective address (Z register + displacement)
@@ -884,7 +874,7 @@ void avrInstruction(CPU *cpu){
         cpu->data[0] = cpu->programBytes[address];
         // Increment the cycle count
         cpu->cycles += 2;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * 2));
+        preciseDelay(cycleTime*2);
     }
     else if ((opcode & 0xFE0F) == 0x9004) {
     // LPM(REG) opcode: 1001 000d dddd 0100
@@ -895,7 +885,7 @@ void avrInstruction(CPU *cpu){
         cpu->data[d] = cpu->programBytes[address];
         // Increment the cycle count
         cpu->cycles += 2;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * 2));
+        preciseDelay(cycleTime*2);
     }
     else if ((opcode & 0xFE0F) == 0x9005) {
     // LPM(INC) opcode: 1001 000d dddd 0101
@@ -909,7 +899,7 @@ void avrInstruction(CPU *cpu){
         cpu->setUint16LittleEndian(30, address + 1);
         // Increment the cycle count
         cpu->cycles += 2;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * 2));
+        preciseDelay(cycleTime*2);
     }
     else if ((opcode & 0xFE0F) == 0x9406) {
     // LSR opcode: 1001 010d dddd 0110
@@ -966,7 +956,7 @@ void avrInstruction(CPU *cpu){
         cpu->data[95] = sreg;
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
     }
     /*** XXX Might have some issues with signed stuff ***/
     else if ((opcode & 0xFF00) == 0x0200) {
@@ -991,7 +981,7 @@ void avrInstruction(CPU *cpu){
 
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
     }
     else if ((opcode & 0xFF88) == 0x0300) {
     // MULSU opcode: 0000 0011 0ddd 0rrr
@@ -1014,7 +1004,7 @@ void avrInstruction(CPU *cpu){
         cpu->data[95] = sreg;
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
     }
     else if ((opcode & 0xFE0F) == 0x9401) {
     // NEG opcode: 1001 010d dddd 0001
@@ -1098,7 +1088,7 @@ void avrInstruction(CPU *cpu){
         cpu->data[d] = cpu->data[sp];
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
     }
     else if ((opcode & 0xFE0F) == 0x920F) {
     // PUSH opcode: 1001 001d dddd 1111
@@ -1114,7 +1104,7 @@ void avrInstruction(CPU *cpu){
         cpu->setUint16LittleEndian(93, sp - 1);
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
     }
     else if ((opcode & 0xF000) == 0xD000) {
     // RCALL opcode: 1101 kkkk kkkk kkkk
@@ -1140,9 +1130,9 @@ void avrInstruction(CPU *cpu){
         // Increment the cycle count
         cpu->cycles += pc22Bits ? 3 : 2;
         if(pc22Bits) {
-            std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * 3));
+            preciseDelay(cycleTime*3);
         } else {
-            std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * 2));
+            preciseDelay(cycleTime*2);
         }
     }
     else if (opcode == 0x9508) {
@@ -1163,9 +1153,9 @@ void avrInstruction(CPU *cpu){
         // Increment the cycle count
         cpu->cycles += pc22Bits ? 4 : 3;
         if(pc22Bits) {
-            std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * 4));
+            preciseDelay(cycleTime*4);
         } else {
-            std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * 3));
+            preciseDelay(cycleTime*3);
         }
     }
     else if (opcode == 0x9518) {
@@ -1192,9 +1182,9 @@ void avrInstruction(CPU *cpu){
         // Increment the cycle count
         cpu->cycles += pc22Bits ? 4 : 3;
         if(pc22Bits) {
-            std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * 4));
+            preciseDelay(cycleTime*4);
         } else {
-            std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * 3));
+            preciseDelay(cycleTime*3);
         }
     }
     /*** XXX Might have some issues with signed stuff ***/
@@ -1207,7 +1197,7 @@ void avrInstruction(CPU *cpu){
         cpu->PC += k;
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
     }
     else if ((opcode & 0xFE0F) == 0x9407) {
     // ROR opcode: 1001 010d dddd 0111
@@ -1293,7 +1283,7 @@ void avrInstruction(CPU *cpu){
         cpu->writeData(address, value | mask, mask);
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
     }
     else if ((opcode & 0xFF00) == 0x9900) {
     // SBIC opcode: 1001 1001 AAAA Abbb
@@ -1310,7 +1300,7 @@ void avrInstruction(CPU *cpu){
             u8 skipSize = isTwoWordInstruction(nextOpcode) ? 2 : 1;
             // Skip the next instruction(s)
             cpu->cycles += skipSize;
-            std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * skipSize));
+            preciseDelay(cycleTime*skipSize);
             cpu->PC += skipSize;
         }
     }
@@ -1329,7 +1319,7 @@ void avrInstruction(CPU *cpu){
             u8 skipSize = isTwoWordInstruction(nextOpcode) ? 2 : 1;
             // Skip the next instruction(s)
             cpu->cycles += skipSize;
-            std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * skipSize));
+            preciseDelay(cycleTime*skipSize);
             cpu->PC += skipSize;
         }
     }
@@ -1357,7 +1347,7 @@ void avrInstruction(CPU *cpu){
         cpu->data[95] = sreg;
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
     }
     else if ((opcode & 0xFE08) == 0xFC00) {
     // SBRC opcode: 1111 110r rrrr 0bbb
@@ -1372,7 +1362,7 @@ void avrInstruction(CPU *cpu){
             u8 skipSize = isTwoWordInstruction(nextOpcode) ? 2 : 1;
             // Skip the next instruction(s)
             cpu->cycles += skipSize;
-            std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * skipSize));
+            preciseDelay(cycleTime * skipSize);
             cpu->PC += skipSize;
         }
     }
@@ -1390,7 +1380,7 @@ void avrInstruction(CPU *cpu){
             u8 skipSize = isTwoWordInstruction(nextOpcode) ? 2 : 1;
             // Skip the next instruction(s)
             cpu->cycles += skipSize;
-            std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime * skipSize));
+            preciseDelay(cycleTime * skipSize);
             cpu->PC += skipSize;
         }
     } 
@@ -1420,7 +1410,7 @@ void avrInstruction(CPU *cpu){
         cpu->PC++;
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
     }
     else if ((opcode & 0xFE0F) == 0x920C) {
     // STX opcode: 1001 001r rrrr 1100
@@ -1433,7 +1423,7 @@ void avrInstruction(CPU *cpu){
         cpu->writeData(address, value);
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
     }
     else if ((opcode & 0xFE0F) == 0x920D) {
     // STX(INC) opcode: 1001 001r rrrr 1101
@@ -1448,7 +1438,7 @@ void avrInstruction(CPU *cpu){
         cpu->setUint16LittleEndian(26, address + 1);
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
     }
     else if ((opcode & 0xFE0F) == 0x920E) {
     // STX(DEC) opcode: 1001 001r rrrr 1110
@@ -1462,7 +1452,7 @@ void avrInstruction(CPU *cpu){
         cpu->writeData(address, value);
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
     }
     else if ((opcode & 0xFE0F) == 0x8208) {
     // STY opcode: 1000 001r rrrr 1000
@@ -1475,7 +1465,7 @@ void avrInstruction(CPU *cpu){
         cpu->writeData(address, value);
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
     }
     else if ((opcode & 0xFE0F) == 0x9209) {
     // STY(INC) opcode: 1001 001r rrrr 1001
@@ -1490,7 +1480,7 @@ void avrInstruction(CPU *cpu){
         cpu->setUint16LittleEndian(28, address + 1);
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
     }
     else if ((opcode & 0xFE0F) == 0x920A) {
     // STY(DEC) opcode: 1001 001r rrrr 1010
@@ -1504,7 +1494,7 @@ void avrInstruction(CPU *cpu){
         cpu->writeData(address, value);
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
     }
     else if ((opcode & 0xD208) == 0x8208 &&
          ((opcode & 0x7) | ((opcode & 0xC00) >> 7) | ((opcode & 0x2000) >> 8))) {
@@ -1522,7 +1512,7 @@ void avrInstruction(CPU *cpu){
         cpu->writeData(address, value);
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
     }
     else if ((opcode & 0xFE0F) == 0x8200) {
     // STZ opcode: 1000 001r rrrr 0000
@@ -1535,7 +1525,7 @@ void avrInstruction(CPU *cpu){
         cpu->writeData(address, value);
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
     }
     else if ((opcode & 0xFE0F) == 0x9201) {
     // STZ(INC) opcode: 1001 001r rrrr 0001
@@ -1550,7 +1540,7 @@ void avrInstruction(CPU *cpu){
         cpu->setUint16LittleEndian(30, address + 1);
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
     }
     else if ((opcode & 0xFE0F) == 0x9202) {
     // STZ(DEC) opcode: 1001 001r rrrr 0010
@@ -1564,7 +1554,7 @@ void avrInstruction(CPU *cpu){
         cpu->writeData(address, value);
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
     }
     else if ((opcode & 0xD208) == 0x8200 &&
          ((opcode & 0x7) | ((opcode & 0xC00) >> 7) | ((opcode & 0x2000) >> 8))) {
@@ -1582,7 +1572,7 @@ void avrInstruction(CPU *cpu){
         cpu->writeData(address, value);
         // Increment the cycle count
         cpu->cycles++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+        preciseDelay(cycleTime);
     }
     else if ((opcode & 0xFC00) == 0x1800) {
     // SUB opcode: 0001 10rd dddd rrrr
@@ -1668,5 +1658,20 @@ void avrInstruction(CPU *cpu){
     cpu->PC = (cpu->PC + 1) % cpu->programMemory.size();
     // Increment the cycles
     cpu->cycles++;
-    std::this_thread::sleep_for(std::chrono::nanoseconds(cycleTime));
+    preciseDelay(cycleTime);
 }
+
+void preciseDelay(int nanoseconds) {
+    auto start = std::chrono::high_resolution_clock::now();
+    auto end = start + std::chrono::nanoseconds(nanoseconds);
+    
+    while (std::chrono::high_resolution_clock::now() < end) {
+        // Busy wait
+        // asm volatile("" ::: "memory"); // prevent optimization
+        // int a = 1+2;
+        // int b = 3+4;
+        // a = 5*b;
+        std::cout<<" ";
+    }
+}
+

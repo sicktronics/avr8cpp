@@ -48,7 +48,7 @@ typedef std::shared_ptr<std::function<void()>> AVRClockEventCallback;
 // OLD --> typedef void (*AVRClockEventCallback) ();
 
 /* How long a clock cycle takes in nanoseconds (technically, 62.5 for an Uno board) */
-const int cycleTime = 63;
+const int cycleTime = 62;
 
 /*
   A constant to represent the size of the register space 
