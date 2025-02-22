@@ -38,6 +38,17 @@ AVRRunner::AVRRunner(std::string lilHexGal){
     // Skip task scheduler
 }
 
+AVRRunner::~AVRRunner(){
+    // std::cout << "Inside destructor!!!" << std::endl;
+    delete[] this->cpu;
+    delete[] this->timer0;
+    delete[] this->timer1;
+    delete[] this->timer2;
+    delete[] this->portB;
+    delete[] this->portC;
+    delete[] this->portD;
+}
+
 void AVRRunner::execute(){
     simBeginTicking = true;
     long cyclesToRun = this->cpu->cycles + workUnitCycles;
@@ -45,7 +56,9 @@ void AVRRunner::execute(){
         avrInstruction(this->cpu);
         this->cpu->tick();
         // cyclesToRun = this->cpu->cycles + workUnitCycles;
+        // std::cout << "cycle: " << runner->cpu->cycles << std::endl
     }
+    AVRRunner::~AVRRunner();
 }
 
 // Just for testing VVV 

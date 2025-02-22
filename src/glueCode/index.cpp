@@ -43,6 +43,9 @@ void executeProgram(std::string lilHexGal) {
     [](u8 value, u8 oldValue) {
         led13 = (runner->portB->pinState(5) == PinState::High);
         std::cout<< "THIS IS THE LED: " << led13 << std::endl;
+        // std::this_thread::sleep_for(std::chrono::nanoseconds(1000000000));
+        // std::cout << "cycle: " << runner->cpu->cycles << std::endl;
+
     }));
 
     runner->execute();
@@ -59,7 +62,7 @@ void compileAndRun(){
     // std::cout << hexiCode << std::endl;
 
     // Since we are assuming that the result is sound hex, now we just call execute (will update later)
-    std::cout << "Executing program..." << std::endl;
+    // std::cout << "Executing program..." << std::endl;
     executeProgram(hexiCode);
 
 }

@@ -37,6 +37,9 @@ class AVRRunner {
     // Other stuff
 
     AVRRunner(std::string lilHexGal);
+    
+    // Destructor
+    ~AVRRunner();
 
     // Skipping task scheduler stuff for now...
 
