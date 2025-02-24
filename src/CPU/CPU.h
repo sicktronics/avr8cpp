@@ -48,7 +48,7 @@ typedef std::shared_ptr<std::function<void()>> AVRClockEventCallback;
 // OLD --> typedef void (*AVRClockEventCallback) ();
 
 /* How long a clock cycle takes in nanoseconds (technically, 62.5 for an Uno board) */
-const int cycleTime = 62;
+const int cycleTime = 62.5;
 
 /*
   A constant to represent the size of the register space 
@@ -95,6 +95,9 @@ struct AVRClockEventEntry {
 class CPU {
   // Since our use of this system is pretty limited for now, we are keeping it public
   public:
+
+  // Number of iterations to loop for to achieve cycleTime
+  long numIterations;
 
   // Vector of write hook functions 
   std::vector<writeHookFunction> writeHookVector;
@@ -290,6 +293,9 @@ class CPU {
 
   /* Function for the "ticking" of the CPU - checking clock events and interrupt statuses */
   void tick();
+
+  /*For precise timing of instruction operation*/
+  void calibrateLoop();
 
   /* For FALL 2024 Demo: A test function to fake an interrupt service routine + return */
   // void fakeISRAndRETI();

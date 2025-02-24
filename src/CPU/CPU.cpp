@@ -15,6 +15,9 @@
 
 CPU::CPU(std::vector<u16> progMem, int SRAMSize){
 
+    // Reset numIterations
+    numIterations = 0;
+
     // Filling data[] with zeros
     std::fill(data, data + dataArraySize, 0);
     // Initializing SRAM_BYTES
@@ -35,8 +38,12 @@ CPU::CPU(std::vector<u16> progMem, int SRAMSize){
     }
     // Updating 22 bit addressing based on size of programBytes
     this->pc22Bits = this->programBytes.size() > 0x20000 ? true : false;
-    // Finally, reset the system!
+    // Reset the system!
     this->reset();
+
+    // Finally, run loop calibration
+    // Calibrate how long an instruction loop should take
+    this->calibrateLoop();
 }
 
 void CPU::reset(){
@@ -331,6 +338,25 @@ void CPU::tick() {
             }
         }
     }
+}
+
+void CPU::calibrateLoop() {
+    using namespace std::chrono;
+    
+    constexpr int iterations = 1000;  // Start with a large number to measure
+    auto start = high_resolution_clock::now();
+
+    volatile int dummy = 0;  // Prevent compiler optimization
+    for (int i = 0; i < iterations; ++i) {
+        dummy += i;
+    }
+
+    auto end = high_resolution_clock::now();
+    double elapsed_ns = duration_cast<nanoseconds>(end - start).count();
+    
+    std::cout << "Time per iteration: " << (elapsed_ns / iterations) << " ns" << std::endl;
+    this->numIterations = long(cycleTime / (elapsed_ns / iterations)) + 1; 
+    std::cout << "Muber of iterations is: " << this->numIterations << std::endl;
 }
 
 // void CPU::fakeISRAndRETI() {

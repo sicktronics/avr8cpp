@@ -54,7 +54,7 @@ void executeProgram(std::string lilHexGal) {
 void compileAndRun(){
     led13 = false;
 
-    // Store user snippet
+    // Future: kick off compilation pipeline...
 
     // Ultimately, the try-catch statement that checks for either the errors or the hex file.
     // For now, the fake "build" that just returns the hex as a string
